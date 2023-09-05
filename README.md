@@ -1,3 +1,3 @@
-# rcutil
+# rcutil [![Go Reference](https://pkg.go.dev/badge/github.com/k1LoW/rcutil.svg)](https://pkg.go.dev/github.com/k1LoW/rcutil) [![build](https://github.com/k1LoW/rcutil/actions/workflows/ci.yml/badge.svg)](https://github.com/k1LoW/rcutil/actions/workflows/ci.yml) ![Coverage](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/k1LoW/rcutil/coverage.svg) ![Code to Test Ratio](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/k1LoW/rcutil/ratio.svg) ![Test Execution Time](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/k1LoW/rcutil/time.svg)
 
 Package `rcutil` provides utility functions for [rc](https://github.com/k1LoW/rc)
