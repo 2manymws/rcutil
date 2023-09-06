@@ -7,6 +7,8 @@ ci: depsdev test
 test:
 	go test ./... -coverprofile=coverage.out -covermode=count
 
+benchmark:
+	go test -bench . -benchmem -benchtime 10000x -run Benchmark | octocov-go-test-bench --tee > custom_metrics_benchmark.json
 
 lint:
 	golangci-lint run ./...
