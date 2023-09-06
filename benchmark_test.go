@@ -1,4 +1,4 @@
-package rcutil
+package rcutil_test
 
 import (
 	"fmt"
@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/k1LoW/rc"
-	testuc "github.com/k1LoW/rc/testutil"
 	"github.com/k1LoW/rcutil/testutil"
 	"github.com/k1LoW/rp"
+	testur "github.com/k1LoW/rp/testutil"
 )
 
 func BenchmarkNGINXCache(b *testing.B) {
@@ -24,12 +24,18 @@ func BenchmarkNGINXCache(b *testing.B) {
 	proxy := testutil.NewReverseProxyNGINXServer(b, "r.example.com", upstreams)
 
 	// Make cache
+	const concurrency = 100
+	limitCh := make(chan struct{}, concurrency)
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 10000; i++ {
 		i := i
+		limitCh <- struct{}{}
 		wg.Add(1)
 		go func() {
-			defer wg.Done()
+			defer func() {
+				<-limitCh
+				wg.Done()
+			}()
 			req, err := http.NewRequest("GET", fmt.Sprintf("%s/sleep/%d", proxy, i), nil)
 			if err != nil {
 				b.Error(err)
@@ -79,9 +85,9 @@ func BenchmarkRC(b *testing.B) {
 	var upstreams = map[string]string{
 		hostname: urlstr,
 	}
-	c := testuc.NewAllCache(b)
+	c := testutil.NewAllCache(b)
 	m := rc.New(c)
-	rl := testutil.NewRelayer(upstreams)
+	rl := testur.NewRelayer(upstreams)
 	r := rp.NewRouter(rl)
 	proxy := httptest.NewServer(m(r))
 	b.Cleanup(func() {
@@ -89,12 +95,18 @@ func BenchmarkRC(b *testing.B) {
 	})
 
 	// Make cache
+	const concurrency = 100
+	limitCh := make(chan struct{}, concurrency)
 	wg := &sync.WaitGroup{}
 	for i := 0; i < 10000; i++ {
 		i := i
+		limitCh <- struct{}{}
 		wg.Add(1)
 		go func() {
-			defer wg.Done()
+			defer func() {
+				<-limitCh
+				wg.Done()
+			}()
 			req, err := http.NewRequest("GET", fmt.Sprintf("%s/sleep/%d", proxy.URL, i), nil)
 			if err != nil {
 				b.Error(err)
@@ -105,6 +117,7 @@ func BenchmarkRC(b *testing.B) {
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
 				b.Error(err)
+				return
 			}
 			res.Body.Close()
 		}()
@@ -143,9 +156,9 @@ func TestContainer(t *testing.T) {
 	var upstreams = map[string]string{
 		hostname: urlstr,
 	}
-	c := testuc.NewAllCache(t)
+	c := testutil.NewAllCache(t)
 	m := rc.New(c)
-	rl := testutil.NewRelayer(upstreams)
+	rl := testur.NewRelayer(upstreams)
 	r := rp.NewRouter(rl)
 	proxy := httptest.NewServer(m(r))
 	t.Cleanup(func() {
