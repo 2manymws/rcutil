@@ -1,16 +1,19 @@
 package testutil
 
 import (
+	"context"
 	"embed"
 	"fmt"
+	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 )
 
 const (
@@ -42,6 +45,12 @@ func NewReverseProxyNGINXServer(t testing.TB, hostname string, upstreams map[str
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
+
+	if os.Getenv("DEBUG") != "" {
+		b, _ := os.ReadFile(p)
+		t.Logf("%s NGINX config:\n%s\n", hostname, string(b))
+	}
+
 	return createNGINXServer(t, hostname, p)
 }
 
@@ -66,6 +75,12 @@ func NewUpstreamEchoNGINXServer(t testing.TB, hostname string) string {
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
+
+	if os.Getenv("DEBUG") != "" {
+		b, _ := os.ReadFile(p)
+		t.Logf("%s NGINX config:\n%s\n", hostname, string(b))
+	}
+
 	return createNGINXServer(t, hostname, p)
 }
 
@@ -85,6 +100,7 @@ func createNGINXServer(t testing.TB, hostname, confp string) string {
 		t.Fatalf("Could not connect to docker: %s", err)
 	}
 	opt := &dockertest.RunOptions{
+		Name:       hostname,
 		Hostname:   hostname,
 		Repository: "nginx",
 		Tag:        "latest",
@@ -94,24 +110,28 @@ func createNGINXServer(t testing.TB, hostname, confp string) string {
 			fmt.Sprintf("%s:/etc/nginx/njs/sleep.js:ro", sp),
 		},
 	}
-	e, err := pool.RunWithOptions(opt)
+	r, err := pool.RunWithOptions(opt)
 	if err != nil {
 		t.Fatalf("Could not start resource: %s", err)
 	}
+
+	if os.Getenv("DEBUG") != "" {
+		go func() {
+			_ = tailLogs(t, pool, r, os.Stderr, true)
+		}()
+	}
+
 	t.Cleanup(func() {
-		if err := pool.Purge(e); err != nil {
+		if err := pool.Purge(r); err != nil {
 			t.Fatalf("Could not purge resource: %s", err)
 		}
 	})
 
 	var urlstr string
 	if err := pool.Retry(func() error {
-		urlstr = fmt.Sprintf("http://localhost:%s/", e.GetPort("80/tcp"))
-		u, err := url.Parse(urlstr)
-		if err != nil {
-			return err
-		}
-		if _, err := http.Get(u.String()); err != nil {
+		urlstr = fmt.Sprintf("http://127.0.0.1:%s", r.GetPort("80/tcp"))
+		if _, err := http.Get(urlstr); err != nil {
+			time.Sleep(1 * time.Second)
 			return err
 		}
 		return nil
@@ -148,4 +168,25 @@ func testNetwork(t testing.TB) *dockertest.Network {
 		t.Fatalf("Could not connect to docker: %s", err)
 	}
 	return nil
+}
+
+func tailLogs(t testing.TB, pool *dockertest.Pool, r *dockertest.Resource, wr io.Writer, follow bool) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	opts := docker.LogsOptions{
+		Context:     ctx,
+		Stderr:      true,
+		Stdout:      true,
+		Follow:      follow,
+		Timestamps:  true,
+		RawTerminal: false,
+
+		Container: r.Container.ID,
+
+		OutputStream: wr,
+		ErrorStream:  wr,
+	}
+	t.Cleanup(func() {
+		cancel()
+	})
+	return pool.Client.Logs(opts)
 }

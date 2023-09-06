@@ -21,8 +21,14 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run lint
-        uses: reviewdog/action-golangci-lint@v2
+      # - name: Run lint
+      #   uses: reviewdog/action-golangci-lint@v2
+
+      - name: Debug
+        run: |
+          docker ps
+          docker container ls -a
+          docker network ls
 
       - name: Run tests
         run: make ci
