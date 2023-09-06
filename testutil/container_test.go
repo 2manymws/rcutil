@@ -43,7 +43,7 @@ func TestContainer(t *testing.T) {
 		}
 		defer res.Body.Close()
 		if res.Header.Get("X-Nginx-Cache") != "HIT" {
-			t.Fatal("NGINX cache is not working")
+			t.Fatalf("NGINX cache is not working: %v", res.Header)
 		}
 	}
 }

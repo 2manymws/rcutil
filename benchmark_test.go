@@ -107,7 +107,7 @@ func BenchmarkRC(b *testing.B) {
 				<-limitCh
 				wg.Done()
 			}()
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/sleep/%d", proxy.URL, i), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%ssleep/%d", proxy.URL, i), nil)
 			if err != nil {
 				b.Error(err)
 				return
@@ -128,7 +128,7 @@ func BenchmarkRC(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			i := rand.Intn(10000)
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/sleep/%d", proxy.URL, i), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%ssleep/%d", proxy.URL, i), nil)
 			if err != nil {
 				b.Error(err)
 				return
