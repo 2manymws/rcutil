@@ -3,6 +3,7 @@ package testutil
 import (
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"testing"
 	"time"
 )
@@ -43,7 +44,8 @@ func TestContainer(t *testing.T) {
 		}
 		defer res.Body.Close()
 		if res.Header.Get("X-Nginx-Cache") != "HIT" {
-			t.Fatalf("NGINX cache is not working: %v", res.Header)
+			b, _ := httputil.DumpResponse(res, true)
+			t.Fatalf("NGINX cache is not working:\n%s", string(b))
 		}
 	}
 }
