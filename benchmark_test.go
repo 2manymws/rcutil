@@ -25,7 +25,7 @@ func BenchmarkNGINXCache(b *testing.B) {
 
 	// Make cache
 	const (
-		concurrency = 100
+		concurrency = 1
 		cacherange  = 10000
 	)
 	limitCh := make(chan struct{}, concurrency)
