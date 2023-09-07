@@ -11,7 +11,6 @@ import (
 	"github.com/k1LoW/rcutil/testutil"
 	"github.com/k1LoW/rp"
 	testur "github.com/k1LoW/rp/testutil"
-	"golang.org/x/sync/errgroup"
 )
 
 func BenchmarkNGINXCache(b *testing.B) {
@@ -26,31 +25,7 @@ func BenchmarkNGINXCache(b *testing.B) {
 		concurrency = 1
 		cacherange  = 10000
 	)
-	limitCh := make(chan struct{}, concurrency)
-	eg := new(errgroup.Group)
-	for i := 0; i < cacherange; i++ {
-		i := i
-		limitCh <- struct{}{}
-		eg.Go(func() error {
-			defer func() {
-				<-limitCh
-			}()
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/cache/%d", proxy, i), nil)
-			if err != nil {
-				return err
-			}
-			req.Host = hostname
-			req.Close = true
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return err
-			}
-			return res.Body.Close()
-		})
-	}
-	if err := eg.Wait(); err != nil {
-		b.Fatal(err)
-	}
+	testutil.WarmUpToCreateCache(b, proxy, hostname, concurrency, cacherange)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -96,31 +71,7 @@ func BenchmarkRC(b *testing.B) {
 		concurrency = 100
 		cacherange  = 10000
 	)
-	limitCh := make(chan struct{}, concurrency)
-	eg := new(errgroup.Group)
-	for i := 0; i < cacherange; i++ {
-		i := i
-		limitCh <- struct{}{}
-		eg.Go(func() error {
-			defer func() {
-				<-limitCh
-			}()
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/cache/%d", proxy.URL, i), nil)
-			if err != nil {
-				return err
-			}
-			req.Host = hostname
-			req.Close = true
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return err
-			}
-			return res.Body.Close()
-		})
-	}
-	if err := eg.Wait(); err != nil {
-		b.Fatal(err)
-	}
+	testutil.WarmUpToCreateCache(b, proxy.URL, hostname, concurrency, cacherange)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
