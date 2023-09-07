@@ -8,12 +8,6 @@ import (
 	"strings"
 )
 
-type cacheResponse struct {
-	StatusCode int
-	Header     http.Header
-	Body       []byte
-}
-
 // Seed returns seed for cache key.
 func Seed(req *http.Request, vary []string) (string, error) {
 	const sep = "|"
@@ -26,29 +20,34 @@ func Seed(req *http.Request, vary []string) (string, error) {
 	return strings.ToLower(seed), nil
 }
 
-// ResponseToBytes converts http.Response to []byte.
-func ResponseToBytes(res *http.Response) ([]byte, error) {
+type cacheResponse struct {
+	StatusCode int
+	Header     http.Header
+	Body       []byte
+}
+
+// StoreResponse stores http.Response.
+func StoreResponse(res *http.Response, w io.Writer) error {
 	c := &cacheResponse{
 		StatusCode: res.StatusCode,
 		Header:     res.Header,
 	}
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer res.Body.Close()
 	c.Body = b
-	cb, err := json.Marshal(c)
-	if err != nil {
-		return nil, err
+	if err := json.NewEncoder(w).Encode(c); err != nil {
+		return err
 	}
-	return cb, nil
+	return nil
 }
 
-// BytesToResponse converts []byte to http.Response.
-func BytesToResponse(b []byte) (*http.Response, error) {
+// LoadResponse loads http.Response.
+func LoadResponse(r io.Reader) (*http.Response, error) {
 	c := &cacheResponse{}
-	if err := json.Unmarshal(b, c); err != nil {
+	if err := json.NewDecoder(r).Decode(c); err != nil {
 		return nil, err
 	}
 	res := &http.Response{

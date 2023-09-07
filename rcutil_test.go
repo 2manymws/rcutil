@@ -1,6 +1,7 @@
 package rcutil
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-func TestResponseToBytesToResponse(t *testing.T) {
+func TestStoreAndLoadResponse(t *testing.T) {
 	tests := []struct {
 		res  *http.Response
 		want *http.Response
@@ -31,11 +32,11 @@ func TestResponseToBytesToResponse(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			b, err := ResponseToBytes(tt.res)
-			if err != nil {
+			buf := new(bytes.Buffer)
+			if err := StoreResponse(tt.res, buf); err != nil {
 				t.Fatal(err)
 			}
-			got, err := BytesToResponse(b)
+			got, err := LoadResponse(buf)
 			if err != nil {
 				t.Fatal(err)
 			}
