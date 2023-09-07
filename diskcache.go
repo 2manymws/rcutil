@@ -50,9 +50,7 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, maxKeys uint64, ma
 	}
 	c.m.OnEviction(func(ctx context.Context, r ttlcache.EvictionReason, i *ttlcache.Item[string, *cacheItem]) {
 		ci := i.Value()
-		if err := os.Remove(ci.path); err != nil {
-			return
-		}
+		_ = os.Remove(ci.path)
 		c.mu.Lock()
 		c.totalBytes -= ci.bytes
 		c.mu.Unlock()
@@ -129,6 +127,7 @@ func (c *DiskCache) Load(key string) (*http.Response, error) {
 	ci := i.Value()
 	f, err := os.Open(ci.path)
 	if err != nil {
+		c.m.Delete(key)
 		return nil, ErrCacheNotFound
 	}
 	defer f.Close()
@@ -137,4 +136,9 @@ func (c *DiskCache) Load(key string) (*http.Response, error) {
 		return nil, err
 	}
 	return res, nil
+}
+
+// Delete deletes the cache.
+func (c *DiskCache) Delete(key string) {
+	c.m.Delete(key)
 }
