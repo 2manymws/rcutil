@@ -57,7 +57,25 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, maxKeys uint64, ma
 		c.totalBytes -= ci.bytes
 		c.mu.Unlock()
 	})
+
+	go c.m.Start()
+
 	return c
+}
+
+// StartAutoCleanup starts the goroutine of automatic cache cleanup
+func (c *DiskCache) StartAutoCleanup() {
+	go c.m.Start()
+}
+
+// StopAutoCleanup stops the auto cleanup cache.
+func (c *DiskCache) StopAutoCleanup() {
+	c.m.Stop()
+}
+
+// DeleteExpired deletes expired caches.
+func (c *DiskCache) DeleteExpired() {
+	c.m.DeleteExpired()
 }
 
 // Store stores the response in the cache with the default TTL.
