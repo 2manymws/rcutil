@@ -24,10 +24,13 @@ func BenchmarkNGINXCache(b *testing.B) {
 	proxy := testutil.NewReverseProxyNGINXServer(b, "r.example.com", upstreams)
 
 	// Make cache
-	const concurrency = 100
+	const (
+		concurrency = 100
+		cacherange  = 10000
+	)
 	limitCh := make(chan struct{}, concurrency)
 	wg := &sync.WaitGroup{}
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < cacherange; i++ {
 		i := i
 		limitCh <- struct{}{}
 		wg.Add(1)
@@ -36,7 +39,7 @@ func BenchmarkNGINXCache(b *testing.B) {
 				<-limitCh
 				wg.Done()
 			}()
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/sleep/%d", proxy, i), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/%d", proxy, i), nil)
 			if err != nil {
 				b.Error(err)
 				return
@@ -56,8 +59,8 @@ func BenchmarkNGINXCache(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			i := rand.Intn(10000)
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/sleep/%d", proxy, i), nil)
+			i := rand.Intn(cacherange)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/%d", proxy, i), nil)
 			if err != nil {
 				b.Error(err)
 				return
@@ -73,6 +76,9 @@ func BenchmarkNGINXCache(b *testing.B) {
 			got := res.StatusCode
 			want := http.StatusOK
 			if res.StatusCode != http.StatusOK {
+				b.Errorf("got %v want %v", got, want)
+			}
+			if res.Header.Get("X-Nginx-Cache") != "HIT" {
 				b.Errorf("got %v want %v", got, want)
 			}
 		}
@@ -95,10 +101,13 @@ func BenchmarkRC(b *testing.B) {
 	})
 
 	// Make cache
-	const concurrency = 100
+	const (
+		concurrency = 100
+		cacherange  = 10000
+	)
 	limitCh := make(chan struct{}, concurrency)
 	wg := &sync.WaitGroup{}
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < cacherange; i++ {
 		i := i
 		limitCh <- struct{}{}
 		wg.Add(1)
@@ -107,7 +116,7 @@ func BenchmarkRC(b *testing.B) {
 				<-limitCh
 				wg.Done()
 			}()
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/sleep/%d", proxy.URL, i), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/%d", proxy.URL, i), nil)
 			if err != nil {
 				b.Error(err)
 				return
@@ -127,8 +136,8 @@ func BenchmarkRC(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			i := rand.Intn(10000)
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/sleep/%d", proxy.URL, i), nil)
+			i := rand.Intn(cacherange)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/%d", proxy.URL, i), nil)
 			if err != nil {
 				b.Error(err)
 				return
@@ -144,6 +153,9 @@ func BenchmarkRC(b *testing.B) {
 			got := res.StatusCode
 			want := http.StatusOK
 			if res.StatusCode != http.StatusOK {
+				b.Errorf("got %v want %v", got, want)
+			}
+			if res.Header.Get("X-Cache") != "HIT" {
 				b.Errorf("got %v want %v", got, want)
 			}
 		}
