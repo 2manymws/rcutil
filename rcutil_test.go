@@ -59,6 +59,28 @@ func TestStoreAndLoadResponse(t *testing.T) {
 	}
 }
 
+func TestKeyToPath(t *testing.T) {
+	tests := []struct {
+		key  string
+		n    int
+		want string
+	}{
+		{"ab", 2, "ab"},
+		{"abcd", 2, "ab/cd"},
+		{"abcde", 2, "ab/cd/e"},
+		{"abcdef", 2, "ab/cd/ef"},
+		{"abcdefg", 2, "ab/cd/ef/g"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.key, func(t *testing.T) {
+			got := KeyToPath(tt.key, tt.n)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
 func newBody(s string) io.ReadCloser {
 	return io.NopCloser(strings.NewReader(s))
 }

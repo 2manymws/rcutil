@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 )
 
@@ -21,9 +22,9 @@ func Seed(req *http.Request, vary []string) (string, error) {
 }
 
 type cacheResponse struct {
-	StatusCode int
-	Header     http.Header
-	Body       []byte
+	StatusCode int         `json:"status_code"`
+	Header     http.Header `json:"header"`
+	Body       []byte      `json:"body"`
 }
 
 // StoreResponse stores http.Response.
@@ -32,6 +33,7 @@ func StoreResponse(res *http.Response, w io.Writer) error {
 		StatusCode: res.StatusCode,
 		Header:     res.Header,
 	}
+	// FIXME: Use stream
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
@@ -56,4 +58,31 @@ func LoadResponse(r io.Reader) (*http.Response, error) {
 		Body:       io.NopCloser(bytes.NewReader(c.Body)),
 	}
 	return res, nil
+}
+
+func KeyToPath(key string, n int) string {
+	var result strings.Builder
+	l := len(key)
+	for i, char := range key {
+		if i > 0 && i%n == 0 && l-i > 0 {
+			result.WriteRune(filepath.Separator)
+		}
+		result.WriteRune(char)
+	}
+
+	return result.String()
+}
+
+type WriteCounter struct {
+	io.Writer
+	Bytes int
+}
+
+func (wc *WriteCounter) Write(p []byte) (int, error) {
+	n, err := wc.Writer.Write(p)
+	if err != nil {
+		return n, err
+	}
+	wc.Bytes += n
+	return n, err
 }
