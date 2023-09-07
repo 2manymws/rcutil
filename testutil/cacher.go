@@ -79,7 +79,7 @@ func (c *AllCache) Load(req *http.Request) (res *http.Response, err error) {
 		return nil, errCacheNotFound
 	}
 	defer f.Close()
-	res, err = rcutil.LoadResponse(f)
+	res, err = rcutil.DecodeResponse(f)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (c *AllCache) Store(req *http.Request, res *http.Response) error {
 		return err
 	}
 	defer f.Close()
-	if err := rcutil.StoreResponse(res, f); err != nil {
+	if err := rcutil.EncodeResponse(res, f); err != nil {
 		return err
 	}
 	c.mu.Lock()

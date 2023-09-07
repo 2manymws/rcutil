@@ -95,7 +95,7 @@ func (c *DiskCache) StoreWithTTL(key string, res *http.Response, ttl time.Durati
 	}
 	wc := &WriteCounter{Writer: f}
 	defer f.Close()
-	if err := StoreResponse(res, wc); err != nil {
+	if err := EncodeResponse(res, wc); err != nil {
 		return err
 	}
 	ci := &cacheItem{
@@ -131,7 +131,7 @@ func (c *DiskCache) Load(key string) (*http.Response, error) {
 		return nil, ErrCacheNotFound
 	}
 	defer f.Close()
-	res, err := LoadResponse(f)
+	res, err := DecodeResponse(f)
 	if err != nil {
 		return nil, err
 	}

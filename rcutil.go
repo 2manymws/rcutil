@@ -27,8 +27,8 @@ type cacheResponse struct {
 	Body       []byte      `json:"body"`
 }
 
-// StoreResponse stores http.Response.
-func StoreResponse(res *http.Response, w io.Writer) error {
+// EncodeResponse encodes http.Response.
+func EncodeResponse(res *http.Response, w io.Writer) error {
 	c := &cacheResponse{
 		StatusCode: res.StatusCode,
 		Header:     res.Header,
@@ -46,8 +46,8 @@ func StoreResponse(res *http.Response, w io.Writer) error {
 	return nil
 }
 
-// LoadResponse loads http.Response.
-func LoadResponse(r io.Reader) (*http.Response, error) {
+// DecodeResponse decodes to http.Response.
+func DecodeResponse(r io.Reader) (*http.Response, error) {
 	c := &cacheResponse{}
 	if err := json.NewDecoder(r).Decode(c); err != nil {
 		return nil, err
@@ -60,6 +60,7 @@ func LoadResponse(r io.Reader) (*http.Response, error) {
 	return res, nil
 }
 
+// KeyToPath converts key to path
 func KeyToPath(key string, n int) string {
 	var result strings.Builder
 	l := len(key)
@@ -73,11 +74,13 @@ func KeyToPath(key string, n int) string {
 	return result.String()
 }
 
+// WriteCounter counts bytes written.
 type WriteCounter struct {
 	io.Writer
 	Bytes int
 }
 
+// Write writes bytes.
 func (wc *WriteCounter) Write(p []byte) (int, error) {
 	n, err := wc.Writer.Write(p)
 	if err != nil {
