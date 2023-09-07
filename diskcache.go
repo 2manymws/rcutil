@@ -12,15 +12,17 @@ import (
 )
 
 const (
-	NoLimitKeyCapacity   = 0
-	NoLimitMaxCacheBytes = 0
+	NoLimitKeys       = 0
+	NoLimitTotalBytes = 0
+	NoLimitTTL        = ttlcache.NoTTL
 )
 
+// DiskCache is a disk cache implementation.
 type DiskCache struct {
 	cacheRoot     string
-	cacheMaxBytes int
+	maxTotalBytes int
 	m             *ttlcache.Cache[string, *cacheItem]
-	cacheBytes    int
+	totalBytes    int
 	mu            sync.Mutex
 }
 
@@ -29,16 +31,21 @@ type cacheItem struct {
 	bytes int
 }
 
-func NewDiskCache(cacheRoot string, defaultTTL time.Duration, keyCapacity uint64, cacheMaxBytes int) *DiskCache {
+// NewDiskCache returns a new DiskCache.
+// cacheRoot: the root directory of the cache.
+// defaultTTL: the default TTL of the cache.
+// maxKeys: the maximum number of keys that can be stored in the cache. If NoLimitKeys is specified, there is no limit.
+// maxTotalBytes: the maximum number of bytes that can be stored in the cache. If NoLimitTotalBytes is specified, there is no limit.
+func NewDiskCache(cacheRoot string, defaultTTL time.Duration, maxKeys uint64, maxTotalBytes int) *DiskCache {
 	opts := []ttlcache.Option[string, *cacheItem]{
 		ttlcache.WithTTL[string, *cacheItem](defaultTTL),
 	}
-	if keyCapacity > 0 {
-		opts = append(opts, ttlcache.WithCapacity[string, *cacheItem](keyCapacity))
+	if maxKeys > 0 {
+		opts = append(opts, ttlcache.WithCapacity[string, *cacheItem](maxKeys))
 	}
 	c := &DiskCache{
 		cacheRoot:     cacheRoot,
-		cacheMaxBytes: cacheMaxBytes,
+		maxTotalBytes: maxTotalBytes,
 		m:             ttlcache.New(opts...),
 	}
 	c.m.OnEviction(func(ctx context.Context, r ttlcache.EvictionReason, i *ttlcache.Item[string, *cacheItem]) {
@@ -47,16 +54,19 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, keyCapacity uint64
 			return
 		}
 		c.mu.Lock()
-		c.cacheBytes -= ci.bytes
+		c.totalBytes -= ci.bytes
 		c.mu.Unlock()
 	})
 	return c
 }
 
+// Store stores the response in the cache with the default TTL.
 func (c *DiskCache) Store(key string, res *http.Response) error {
 	return c.StoreWithTTL(key, res, ttlcache.DefaultTTL)
 }
 
+// StoreWithTTL stores the response in the cache with the specified TTL.
+// If you want to store the response with no TTL, use NoLimitTTL.
 func (c *DiskCache) StoreWithTTL(key string, res *http.Response, ttl time.Duration) error {
 	p := filepath.Join(c.cacheRoot, KeyToPath(key, 2))
 	dir := filepath.Dir(p)
@@ -78,17 +88,18 @@ func (c *DiskCache) StoreWithTTL(key string, res *http.Response, ttl time.Durati
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.cacheMaxBytes != NoLimitMaxCacheBytes && c.cacheBytes+wc.Bytes >= c.cacheMaxBytes {
+	if c.maxTotalBytes != NoLimitTotalBytes && c.totalBytes+wc.Bytes >= c.maxTotalBytes {
 		if err := os.Remove(p); err != nil {
 			return err
 		}
 		return ErrCacheFull
 	}
 	c.m.Set(key, ci, ttl)
-	c.cacheBytes += wc.Bytes
+	c.totalBytes += wc.Bytes
 	return nil
 }
 
+// Load loads the response from the cache.
 func (c *DiskCache) Load(key string) (*http.Response, error) {
 	i := c.m.Get(key)
 	if i == nil {
