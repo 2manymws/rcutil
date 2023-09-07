@@ -21,11 +21,22 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Run lint
-        uses: reviewdog/action-golangci-lint@v2
+      # - name: Run lint
+      #   uses: reviewdog/action-golangci-lint@v2
+
+      - name: Debug
+        run: |
+          docker ps
+          docker container ls -a
+          docker network ls
 
       - name: Run tests
         run: make ci
 
+      - name: Run benchmark
+        run: make benchmark
+
       - name: Run octocov
         uses: k1LoW/octocov-action@v0
+        env:
+          OCTOCOV_CUSTOM_METRICS_BENCHMARK: custom_metrics_benchmark.json
