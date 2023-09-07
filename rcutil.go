@@ -5,12 +5,25 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type cacheResponse struct {
 	StatusCode int
 	Header     http.Header
 	Body       []byte
+}
+
+// Seed returns seed for cache key.
+func Seed(req *http.Request, vary []string) (string, error) {
+	const sep = "|"
+	seed := req.Method + sep + req.URL.Path + sep + req.URL.RawQuery
+	for _, h := range vary {
+		if vv := req.Header.Get(h); vv != "" {
+			seed += sep + ":" + h + vv
+		}
+	}
+	return strings.ToLower(seed), nil
 }
 
 // ResponseToBytes converts http.Response to []byte.
