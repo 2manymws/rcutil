@@ -39,28 +39,29 @@ func BenchmarkNGINXCache(b *testing.B) {
 				<-limitCh
 				wg.Done()
 			}()
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/%d", proxy, i), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/cache/%d", proxy, i), nil)
 			if err != nil {
-				b.Error(err)
+				b.Fatal(err)
 				return
 			}
 			req.Host = hostname
 			req.Close = true
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
-				b.Error(err)
+				b.Fatal(err)
 				return
 			}
 			res.Body.Close()
 		}()
 	}
+	wg.Wait()
 
 	rand.Seed(time.Now().UnixNano())
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			i := rand.Intn(cacherange)
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/%d", proxy, i), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/cache/%d", proxy, i), nil)
 			if err != nil {
 				b.Error(err)
 				return
@@ -73,13 +74,8 @@ func BenchmarkNGINXCache(b *testing.B) {
 				return
 			}
 			res.Body.Close()
-			got := res.StatusCode
-			want := http.StatusOK
-			if res.StatusCode != http.StatusOK {
-				b.Errorf("got %v want %v", got, want)
-			}
 			if res.Header.Get("X-Nginx-Cache") != "HIT" {
-				b.Errorf("got %v want %v", got, want)
+				b.Errorf("cache miss: %v %s", req.Header, req.URL.String())
 			}
 		}
 	})
@@ -116,7 +112,7 @@ func BenchmarkRC(b *testing.B) {
 				<-limitCh
 				wg.Done()
 			}()
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/%d", proxy.URL, i), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/cache/%d", proxy.URL, i), nil)
 			if err != nil {
 				b.Error(err)
 				return
@@ -131,13 +127,14 @@ func BenchmarkRC(b *testing.B) {
 			res.Body.Close()
 		}()
 	}
+	wg.Wait()
 
 	rand.Seed(time.Now().UnixNano())
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			i := rand.Intn(cacherange)
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s/%d", proxy.URL, i), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s/cache/%d", proxy.URL, i), nil)
 			if err != nil {
 				b.Error(err)
 				return
@@ -150,13 +147,8 @@ func BenchmarkRC(b *testing.B) {
 				return
 			}
 			res.Body.Close()
-			got := res.StatusCode
-			want := http.StatusOK
-			if res.StatusCode != http.StatusOK {
-				b.Errorf("got %v want %v", got, want)
-			}
 			if res.Header.Get("X-Cache") != "HIT" {
-				b.Errorf("got %v want %v", got, want)
+				b.Errorf("cache miss: %s", req.URL.String())
 			}
 		}
 	})

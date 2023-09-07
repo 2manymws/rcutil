@@ -99,8 +99,9 @@ func createNGINXServer(t testing.TB, hostname, confp string) string {
 	if err != nil {
 		t.Fatalf("Could not connect to docker: %s", err)
 	}
+	now := time.Now()
 	opt := &dockertest.RunOptions{
-		Name:       hostname,
+		Name:       fmt.Sprintf("%s-%s", hostname, now.Format("20060102150405")),
 		Hostname:   hostname,
 		Repository: "nginx",
 		Tag:        "latest",

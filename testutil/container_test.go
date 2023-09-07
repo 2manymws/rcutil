@@ -50,8 +50,6 @@ func TestContainer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		b, _ := httputil.DumpResponse(res, true)
-		t.Logf("first request to /sleep:\n%s", (string(b)))
 		defer res.Body.Close()
 		after := time.Now()
 		if after.Sub(now) < 1*time.Second {
@@ -60,7 +58,20 @@ func TestContainer(t *testing.T) {
 	}
 
 	{
-		req, err := http.NewRequest("GET", proxy+"/sleep", nil)
+		req, err := http.NewRequest("GET", proxy+"/cache/hello", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Host = upstream
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+	}
+
+	{
+		req, err := http.NewRequest("GET", proxy+"/cache/hello", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
