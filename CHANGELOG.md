@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.3.1](https://github.com/k1LoW/rcutil/compare/v0.3.0...v0.3.1) - 2023-09-08
+### New Features 🎉
+- Add SetCacheResultHeader by @k1LoW in https://github.com/k1LoW/rcutil/pull/9
+
 ## [v0.3.0](https://github.com/k1LoW/rcutil/compare/v0.2.0...v0.3.0) - 2023-09-08
 ### Breaking Changes 🛠
 - Change funcsions ( use io.Reader / io.Writer instead of []byte ) by @k1LoW in https://github.com/k1LoW/rcutil/pull/7
