@@ -19,22 +19,49 @@ const (
 
 // DiskCache is a disk cache implementation.
 type DiskCache struct {
-	cacheRoot     string
-	maxTotalBytes int
-	m             *ttlcache.Cache[string, *cacheItem]
-	totalBytes    int
-	mu            sync.Mutex
+	cacheRoot          string
+	maxKeys            uint64
+	maxTotalBytes      uint64
+	disableAutoCleanup bool
+	m                  *ttlcache.Cache[string, *cacheItem]
+	totalBytes         uint64
+	mu                 sync.Mutex
 }
 
+// DiskCacheOption is an option for DiskCache.
+type DiskCacheOption func(*DiskCache)
+
+// MaxKeys sets the maximum number of keys that can be stored in the cache.
+func MaxKeys(n uint64) DiskCacheOption {
+	return func(c *DiskCache) {
+		c.maxKeys = n
+	}
+}
+
+// MaxTotalBytes sets the maximum number of bytes that can be stored in the cache.
+func MaxTotalBytes(n uint64) DiskCacheOption {
+	return func(c *DiskCache) {
+		c.maxTotalBytes = n
+	}
+}
+
+// DisableAutoCleanup disables the automatic cache cleanup.
+func DisableAutoCleanup() DiskCacheOption {
+	return func(c *DiskCache) {
+		c.disableAutoCleanup = true
+	}
+}
+
+// Metrics returns the metrics of the cache.
 type Metrics struct {
 	ttlcache.Metrics
-	TotalBytes int
-	KeyCount   int
+	TotalBytes uint64
+	KeyCount   uint64
 }
 
 type cacheItem struct {
 	path  string
-	bytes int
+	bytes uint64
 }
 
 // NewDiskCache returns a new DiskCache.
@@ -42,18 +69,22 @@ type cacheItem struct {
 // defaultTTL: the default TTL of the cache.
 // maxKeys: the maximum number of keys that can be stored in the cache. If NoLimitKeys is specified, there is no limit.
 // maxTotalBytes: the maximum number of bytes that can be stored in the cache. If NoLimitTotalBytes is specified, there is no limit.
-func NewDiskCache(cacheRoot string, defaultTTL time.Duration, maxKeys uint64, maxTotalBytes int) *DiskCache {
-	opts := []ttlcache.Option[string, *cacheItem]{
-		ttlcache.WithTTL[string, *cacheItem](defaultTTL),
-	}
-	if maxKeys > 0 {
-		opts = append(opts, ttlcache.WithCapacity[string, *cacheItem](maxKeys))
-	}
+func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheOption) *DiskCache {
 	c := &DiskCache{
 		cacheRoot:     cacheRoot,
-		maxTotalBytes: maxTotalBytes,
-		m:             ttlcache.New(opts...),
+		maxKeys:       NoLimitKeys,
+		maxTotalBytes: NoLimitTotalBytes,
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	mopts := []ttlcache.Option[string, *cacheItem]{
+		ttlcache.WithTTL[string, *cacheItem](defaultTTL),
+	}
+	if c.maxKeys > 0 {
+		mopts = append(mopts, ttlcache.WithCapacity[string, *cacheItem](c.maxKeys))
+	}
+	c.m = ttlcache.New(mopts...)
 	c.m.OnEviction(func(ctx context.Context, r ttlcache.EvictionReason, i *ttlcache.Item[string, *cacheItem]) {
 		ci := i.Value()
 		_ = os.Remove(ci.path)
@@ -62,7 +93,9 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, maxKeys uint64, ma
 		c.mu.Unlock()
 	})
 
-	go c.m.Start()
+	if !c.disableAutoCleanup {
+		c.StartAutoCleanup()
+	}
 
 	return c
 }
@@ -157,6 +190,6 @@ func (c *DiskCache) Metrics() Metrics {
 	return Metrics{
 		Metrics:    m,
 		TotalBytes: c.totalBytes,
-		KeyCount:   len(c.m.Keys()),
+		KeyCount:   uint64(len(c.m.Keys())),
 	}
 }

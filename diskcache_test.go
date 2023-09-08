@@ -14,7 +14,7 @@ import (
 func TestDiskCacheTTL(t *testing.T) {
 	root := t.TempDir()
 	ttl := 100 * time.Millisecond
-	dc := NewDiskCache(root, ttl, NoLimitKeys, NoLimitTotalBytes)
+	dc := NewDiskCache(root, ttl)
 	key := "test"
 	want := "hello"
 	res := &http.Response{
@@ -52,8 +52,8 @@ func TestDiskCacheTTL(t *testing.T) {
 
 func TestDiskCacheMaxKeys(t *testing.T) {
 	root := t.TempDir()
-	capacity := uint64(1)
-	dc := NewDiskCache(root, 24*time.Hour, capacity, NoLimitTotalBytes)
+	maxKeys := uint64(1)
+	dc := NewDiskCache(root, 24*time.Hour, MaxKeys(maxKeys))
 	for i := 0; i < 2; i++ {
 		key := fmt.Sprintf("test%d", i)
 		body := "hello"
@@ -86,8 +86,8 @@ func TestDiskCacheMaxKeys(t *testing.T) {
 
 func TestDiskCacheMaxTotalBytes(t *testing.T) {
 	root := t.TempDir()
-	maxTotalBytes := len(`{"status_code":200,"header":{"X-Test":["test"]},"body":"aGVsbG8="}`+"\n") + 1
-	dc := NewDiskCache(root, 24*time.Hour, NoLimitKeys, maxTotalBytes)
+	maxTotalBytes := uint64(len(`{"status_code":200,"header":{"X-Test":["test"]},"body":"aGVsbG8="}`+"\n") + 1)
+	dc := NewDiskCache(root, 24*time.Hour, MaxTotalBytes(maxTotalBytes))
 	key := "test1"
 	res := &http.Response{
 		StatusCode: http.StatusOK,
