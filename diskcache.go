@@ -111,6 +111,7 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	}
 
 	if !c.disableWarmUp {
+		// Warm up the cache
 		if err := filepath.WalkDir(cacheRoot, func(path string, info fs.DirEntry, err error) error {
 			if err != nil {
 				return err
