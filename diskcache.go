@@ -26,6 +26,12 @@ type DiskCache struct {
 	mu            sync.Mutex
 }
 
+type Metrics struct {
+	ttlcache.Metrics
+	TotalBytes int
+	KeyCount   int
+}
+
 type cacheItem struct {
 	path  string
 	bytes int
@@ -141,4 +147,16 @@ func (c *DiskCache) Load(key string) (*http.Response, error) {
 // Delete deletes the cache.
 func (c *DiskCache) Delete(key string) {
 	c.m.Delete(key)
+}
+
+// Metrics returns the metrics of the cache.
+func (c *DiskCache) Metrics() Metrics {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	m := c.m.Metrics()
+	return Metrics{
+		Metrics:    m,
+		TotalBytes: c.totalBytes,
+		KeyCount:   len(c.m.Keys()),
+	}
 }
