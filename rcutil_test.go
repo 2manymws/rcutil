@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-func TestStoreAndLoadResponse(t *testing.T) {
+func TestStoreAndDecodeResponse(t *testing.T) {
 	tests := []struct {
 		res  *http.Response
 		want *http.Response
@@ -33,10 +33,10 @@ func TestStoreAndLoadResponse(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			if err := StoreResponse(tt.res, buf); err != nil {
+			if err := EncodeResponse(tt.res, buf); err != nil {
 				t.Fatal(err)
 			}
-			got, err := LoadResponse(buf)
+			got, err := DecodeResponse(buf)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -53,6 +53,28 @@ func TestStoreAndLoadResponse(t *testing.T) {
 			gotb := readBody(got.Body)
 			wantb := readBody(tt.want.Body)
 			if diff := cmp.Diff(wantb, gotb); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
+
+func TestKeyToPath(t *testing.T) {
+	tests := []struct {
+		key  string
+		n    int
+		want string
+	}{
+		{"ab", 2, "ab"},
+		{"abcd", 2, "ab/cd"},
+		{"abcde", 2, "ab/cd/e"},
+		{"abcdef", 2, "ab/cd/ef"},
+		{"abcdefg", 2, "ab/cd/ef/g"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.key, func(t *testing.T) {
+			got := KeyToPath(tt.key, tt.n)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Error(diff)
 			}
 		})

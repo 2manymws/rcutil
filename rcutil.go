@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 )
 
 // Seed returns seed for cache key.
+// The return value seed is NOT path-safe.
 func Seed(req *http.Request, vary []string) (string, error) {
 	const sep = "|"
 	seed := req.Method + sep + req.URL.Path + sep + req.URL.RawQuery
@@ -21,17 +23,18 @@ func Seed(req *http.Request, vary []string) (string, error) {
 }
 
 type cacheResponse struct {
-	StatusCode int
-	Header     http.Header
-	Body       []byte
+	StatusCode int         `json:"status_code"`
+	Header     http.Header `json:"header"`
+	Body       []byte      `json:"body"`
 }
 
-// StoreResponse stores http.Response.
-func StoreResponse(res *http.Response, w io.Writer) error {
+// EncodeResponse encodes http.Response.
+func EncodeResponse(res *http.Response, w io.Writer) error {
 	c := &cacheResponse{
 		StatusCode: res.StatusCode,
 		Header:     res.Header,
 	}
+	// FIXME: Use stream
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
@@ -44,8 +47,8 @@ func StoreResponse(res *http.Response, w io.Writer) error {
 	return nil
 }
 
-// LoadResponse loads http.Response.
-func LoadResponse(r io.Reader) (*http.Response, error) {
+// DecodeResponse decodes to http.Response.
+func DecodeResponse(r io.Reader) (*http.Response, error) {
 	c := &cacheResponse{}
 	if err := json.NewDecoder(r).Decode(c); err != nil {
 		return nil, err
@@ -56,4 +59,35 @@ func LoadResponse(r io.Reader) (*http.Response, error) {
 		Body:       io.NopCloser(bytes.NewReader(c.Body)),
 	}
 	return res, nil
+}
+
+// KeyToPath converts key to path
+// It is the responsibility of the user to pass path-safe keys
+func KeyToPath(key string, n int) string {
+	var result strings.Builder
+	l := len(key)
+	for i, char := range key {
+		if i > 0 && i%n == 0 && l-i > 0 {
+			result.WriteRune(filepath.Separator)
+		}
+		result.WriteRune(char)
+	}
+
+	return result.String()
+}
+
+// WriteCounter counts bytes written.
+type WriteCounter struct {
+	io.Writer
+	Bytes int
+}
+
+// Write writes bytes.
+func (wc *WriteCounter) Write(p []byte) (int, error) {
+	n, err := wc.Writer.Write(p)
+	if err != nil {
+		return n, err
+	}
+	wc.Bytes += n
+	return n, err
 }
