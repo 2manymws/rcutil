@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.3.0](https://github.com/k1LoW/rcutil/compare/v0.2.0...v0.3.0) - 2023-09-08
+### Breaking Changes 🛠
+- Change funcsions ( use io.Reader / io.Writer instead of []byte ) by @k1LoW in https://github.com/k1LoW/rcutil/pull/7
+- Add DiskCache using ttlcache by @k1LoW in https://github.com/k1LoW/rcutil/pull/8
+
 ## [v0.2.0](https://github.com/k1LoW/rcutil/compare/v0.1.0...v0.2.0) - 2023-09-07
 ### New Features 🎉
 - Add Seed for generate seed for cache key by @k1LoW in https://github.com/k1LoW/rcutil/pull/5
