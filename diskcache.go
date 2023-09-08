@@ -2,9 +2,11 @@ package rcutil
 
 import (
 	"context"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,9 +14,12 @@ import (
 )
 
 const (
-	NoLimitKeys       = 0
+	// NoLimitKeys is a special value that means no limit on the number of keys.
+	NoLimitKeys = 0
+	// NoLimitTotalBytes is a special value that means no limit on the total number of bytes.
 	NoLimitTotalBytes = 0
-	NoLimitTTL        = ttlcache.NoTTL
+	// NoLimitTTL is a special value that means no limit on the TTL.
+	NoLimitTTL = ttlcache.NoTTL
 )
 
 // DiskCache is a disk cache implementation.
@@ -23,6 +28,7 @@ type DiskCache struct {
 	maxKeys            uint64
 	maxTotalBytes      uint64
 	disableAutoCleanup bool
+	disableWarmUp      bool
 	m                  *ttlcache.Cache[string, *cacheItem]
 	totalBytes         uint64
 	mu                 sync.Mutex
@@ -52,6 +58,13 @@ func DisableAutoCleanup() DiskCacheOption {
 	}
 }
 
+// DisableWarmUp disables the automatic cache warm up.
+func DisableWarmUp() DiskCacheOption {
+	return func(c *DiskCache) {
+		c.disableWarmUp = true
+	}
+}
+
 // Metrics returns the metrics of the cache.
 type Metrics struct {
 	ttlcache.Metrics
@@ -69,7 +82,7 @@ type cacheItem struct {
 // defaultTTL: the default TTL of the cache.
 // maxKeys: the maximum number of keys that can be stored in the cache. If NoLimitKeys is specified, there is no limit.
 // maxTotalBytes: the maximum number of bytes that can be stored in the cache. If NoLimitTotalBytes is specified, there is no limit.
-func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheOption) *DiskCache {
+func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheOption) (*DiskCache, error) {
 	c := &DiskCache{
 		cacheRoot:     cacheRoot,
 		maxKeys:       NoLimitKeys,
@@ -78,6 +91,7 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	for _, opt := range opts {
 		opt(c)
 	}
+
 	mopts := []ttlcache.Option[string, *cacheItem]{
 		ttlcache.WithTTL[string, *cacheItem](defaultTTL),
 	}
@@ -92,12 +106,39 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 		c.totalBytes -= ci.bytes
 		c.mu.Unlock()
 	})
-
 	if !c.disableAutoCleanup {
 		c.StartAutoCleanup()
 	}
 
-	return c
+	if !c.disableWarmUp {
+		// Warm up the cache
+		if err := filepath.WalkDir(cacheRoot, func(path string, info fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			rel, err := filepath.Rel(cacheRoot, path)
+			if err != nil {
+				return err
+			}
+			fi, err := info.Info()
+			if err != nil {
+				return err
+			}
+			key := strings.ReplaceAll(rel, string(filepath.Separator), "")
+			c.m.Set(key, &cacheItem{
+				path:  path,
+				bytes: uint64(fi.Size()),
+			}, ttlcache.DefaultTTL)
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	}
+
+	return c, nil
 }
 
 // StartAutoCleanup starts the goroutine of automatic cache cleanup

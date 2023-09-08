@@ -30,7 +30,10 @@ type AllCache struct {
 
 func NewAllCache(t testing.TB) *AllCache {
 	t.Helper()
-	dc := rcutil.NewDiskCache(t.TempDir(), rcutil.NoLimitTTL)
+	dc, err := rcutil.NewDiskCache(t.TempDir(), rcutil.NoLimitTTL)
+	if err != nil {
+		t.Fatal(err)
+	}
 	return &AllCache{
 		t:  t,
 		dc: dc,
