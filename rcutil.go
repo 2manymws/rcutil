@@ -10,6 +10,7 @@ import (
 )
 
 // Seed returns seed for cache key.
+// The return value seed is NOT path-safe.
 func Seed(req *http.Request, vary []string) (string, error) {
 	const sep = "|"
 	seed := req.Method + sep + req.URL.Path + sep + req.URL.RawQuery
@@ -61,6 +62,7 @@ func DecodeResponse(r io.Reader) (*http.Response, error) {
 }
 
 // KeyToPath converts key to path
+// It is the responsibility of the user to pass path-safe keys
 func KeyToPath(key string, n int) string {
 	var result strings.Builder
 	l := len(key)
