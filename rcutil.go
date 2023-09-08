@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+const (
+	CacheResultHeader = "X-Cache"
+	CacheHit          = "HIT"
+	CacheMiss         = "MISS"
+)
+
 // Seed returns seed for cache key.
 // The return value seed is NOT path-safe.
 func Seed(req *http.Request, vary []string) (string, error) {
@@ -90,4 +96,13 @@ func (wc *WriteCounter) Write(p []byte) (int, error) {
 	}
 	wc.Bytes += n
 	return n, err
+}
+
+// SetCacheResultHeader sets cache header.
+func SetCacheResultHeader(res *http.Response, hit bool) {
+	if hit {
+		res.Header.Set(CacheResultHeader, CacheHit)
+	} else {
+		res.Header.Set(CacheResultHeader, CacheMiss)
+	}
 }

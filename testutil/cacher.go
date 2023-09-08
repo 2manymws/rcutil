@@ -53,7 +53,7 @@ func (c *AllCache) Load(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	res.Header.Set("X-Cache", "HIT")
+	rcutil.SetCacheResultHeader(res, true)
 	return res, nil
 }
 
