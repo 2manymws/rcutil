@@ -85,7 +85,7 @@ func KeyToPath(key string, n int) string {
 // WriteCounter counts bytes written.
 type WriteCounter struct {
 	io.Writer
-	Bytes int
+	Bytes uint64
 }
 
 // Write writes bytes.
@@ -94,7 +94,7 @@ func (wc *WriteCounter) Write(p []byte) (int, error) {
 	if err != nil {
 		return n, err
 	}
-	wc.Bytes += n
+	wc.Bytes += uint64(n)
 	return n, err
 }
 
