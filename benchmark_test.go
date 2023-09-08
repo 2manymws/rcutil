@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/k1LoW/rc"
+	"github.com/k1LoW/rcutil"
 	"github.com/k1LoW/rcutil/testutil"
 	"github.com/k1LoW/rp"
 	testur "github.com/k1LoW/rp/testutil"
@@ -44,14 +45,14 @@ func BenchmarkNGINXCache(b *testing.B) {
 				return
 			}
 			res.Body.Close()
-			if res.Header.Get("X-Nginx-Cache") != "HIT" {
+			if res.Header.Get(rcutil.CacheResultHeader) != rcutil.CacheHit {
 				b.Errorf("cache miss: %v %s", req.Header, req.URL.String())
 			}
 		}
 	})
 }
 
-func BenchmarkRC(b *testing.B) {
+func BenchmarkDiscCache(b *testing.B) {
 	hostname := "a.example.com"
 	urlstr := testutil.NewUpstreamEchoNGINXServer(b, hostname)
 	upstreams := map[string]string{}
@@ -90,7 +91,7 @@ func BenchmarkRC(b *testing.B) {
 				return
 			}
 			res.Body.Close()
-			if res.Header.Get("X-Cache") != "HIT" {
+			if res.Header.Get(rcutil.CacheResultHeader) != rcutil.CacheHit {
 				b.Errorf("cache miss: %s", req.URL.String())
 			}
 		}
