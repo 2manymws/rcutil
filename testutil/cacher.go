@@ -51,7 +51,6 @@ func (c *AllCache) Load(req *http.Request) (*http.Response, error) {
 	key := seedToKey(seed)
 	res, err := c.dc.Load(key)
 	if err != nil {
-		rcutil.SetCacheResultHeader(res, false)
 		return nil, err
 	}
 	rcutil.SetCacheResultHeader(res, true)

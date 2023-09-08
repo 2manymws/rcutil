@@ -45,7 +45,7 @@ func BenchmarkNGINXCache(b *testing.B) {
 				return
 			}
 			res.Body.Close()
-			if res.Header.Get(rcutil.CacheResultHeader) != rcutil.CacheHit {
+			if res.Header.Get("X-Nginx-Cache") != "HIT" {
 				b.Errorf("cache miss: %v %s", req.Header, req.URL.String())
 			}
 		}
