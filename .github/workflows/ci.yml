@@ -27,7 +27,7 @@ jobs:
           fail_on_error: true
 
       - name: Run gostyle
-        uses: k1LoW/gostyle-action@fix-work-dir
+        uses: k1LoW/gostyle-action@v1
         with:
           config-file: .gostyle.yml
           fail-on-error: true
