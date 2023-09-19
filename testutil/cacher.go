@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"io"
 	"net/http"
-	"sync"
 	"testing"
 
 	"github.com/k1LoW/rcutil"
@@ -25,7 +24,6 @@ type Cacher interface {
 type AllCache struct {
 	t  testing.TB
 	dc *rcutil.DiskCache
-	mu sync.Mutex
 }
 
 func NewAllCache(t testing.TB) *AllCache {

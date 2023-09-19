@@ -21,14 +21,16 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # - name: Run lint
-      #   uses: reviewdog/action-golangci-lint@v2
+      - name: Run lint
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          fail_on_error: true
 
-      - name: Debug
-        run: |
-          docker ps
-          docker container ls -a
-          docker network ls
+      - name: Run gostyle
+        uses: k1LoW/gostyle-action@v1
+        with:
+          config-file: .gostyle.yml
+          fail-on-error: true
 
       - name: Run tests
         run: make ci
