@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -20,15 +21,17 @@ func TestDiskCacheTTL(t *testing.T) {
 	}
 	key := "test"
 	want := "hello"
+	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody("req")}
 	res := &http.Response{
+		Status:     http.StatusText(http.StatusOK),
 		StatusCode: http.StatusOK,
 		Header:     http.Header{"X-Test": []string{"test"}},
 		Body:       newBody(want),
 	}
-	if err := dc.Store(key, res); err != nil {
+	if err := dc.Store(key, req, res); err != nil {
 		t.Fatal(err)
 	}
-	got, err := dc.Load(key)
+	_, got, err := dc.Load(key)
 	if err != nil {
 		t.Error(err)
 	}
@@ -46,7 +49,7 @@ func TestDiskCacheTTL(t *testing.T) {
 	}
 	time.Sleep(ttl)
 	{
-		_, err := dc.Load(key)
+		_, _, err := dc.Load(key)
 		if !errors.Is(err, ErrCacheNotFound) {
 			t.Error(err)
 		}
@@ -63,19 +66,21 @@ func TestDiskCacheMaxKeys(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		key := fmt.Sprintf("test%d", i)
 		body := "hello"
+		req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody("req")}
 		res := &http.Response{
+			Status:     http.StatusText(http.StatusOK),
 			StatusCode: http.StatusOK,
 			Header:     http.Header{"X-Test": []string{"test"}},
 			Body:       newBody(body),
 		}
-		if err := dc.Store(key, res); err != nil {
+		if err := dc.Store(key, req, res); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	{
 		key := "test1"
-		_, err := dc.Load(key)
+		_, _, err := dc.Load(key)
 		if err != nil {
 			t.Error(err)
 		}
@@ -83,7 +88,7 @@ func TestDiskCacheMaxKeys(t *testing.T) {
 
 	{
 		key := "test0"
-		_, err := dc.Load(key)
+		_, _, err := dc.Load(key)
 		if !errors.Is(err, ErrCacheNotFound) {
 			t.Error(err)
 		}
@@ -92,21 +97,23 @@ func TestDiskCacheMaxKeys(t *testing.T) {
 
 func TestDiskCacheMaxTotalBytes(t *testing.T) {
 	root := t.TempDir()
-	maxTotalBytes := uint64(len(`{"status_code":200,"header":{"X-Test":["test"]},"body":"aGVsbG8="}`+"\n") + 1)
+	maxTotalBytes := uint64(len(`{"method":"GET","url":"/foo","req_header":{},"req_body":"cmVx","status_code":200,"res_header":{"X-Test":["test"]},"res_body":"aGVsbG8="}`+"\n") + 1)
 	dc, err := NewDiskCache(root, 24*time.Hour, MaxTotalBytes(maxTotalBytes))
 	if err != nil {
 		t.Fatal(err)
 	}
 	key := "test1"
+	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody("req")}
 	res := &http.Response{
+		Status:     http.StatusText(http.StatusOK),
 		StatusCode: http.StatusOK,
 		Header:     http.Header{"X-Test": []string{"test"}},
 		Body:       newBody("hello"),
 	}
-	if err := dc.Store(key, res); err != nil {
+	if err := dc.Store(key, req, res); err != nil {
 		t.Fatal(err)
 	}
-	if err := dc.Store(key, res); !errors.Is(err, ErrCacheFull) {
+	if err := dc.Store(key, req, res); !errors.Is(err, ErrCacheFull) {
 		t.Error(err)
 	}
 }
@@ -114,7 +121,9 @@ func TestDiskCacheMaxTotalBytes(t *testing.T) {
 func TestDiskCacheWarmUp(t *testing.T) {
 	root := t.TempDir()
 	key := "test"
+	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody("req")}
 	res := &http.Response{
+		Status:     http.StatusText(http.StatusOK),
 		StatusCode: http.StatusOK,
 		Header:     http.Header{"X-Test": []string{"test"}},
 		Body:       newBody("hello"),
@@ -124,10 +133,10 @@ func TestDiskCacheWarmUp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := dc0.Store(key, res); err != nil {
+	if err := dc0.Store(key, req, res); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := dc0.Load(key); err != nil {
+	if _, _, err := dc0.Load(key); err != nil {
 		t.Fatal(err)
 	}
 
@@ -136,7 +145,7 @@ func TestDiskCacheWarmUp(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		got, err := dc1.Load(key)
+		_, got, err := dc1.Load(key)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -158,7 +167,7 @@ func TestDiskCacheWarmUp(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := dc2.Load(key); err == nil {
+		if _, _, err := dc2.Load(key); err == nil {
 			t.Error("load should fail")
 		}
 	})

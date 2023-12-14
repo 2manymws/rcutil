@@ -157,13 +157,13 @@ func (c *DiskCache) DeleteExpired() {
 }
 
 // Store stores the response in the cache with the default TTL.
-func (c *DiskCache) Store(key string, res *http.Response) error {
-	return c.StoreWithTTL(key, res, ttlcache.DefaultTTL)
+func (c *DiskCache) Store(key string, req *http.Request, res *http.Response) error {
+	return c.StoreWithTTL(key, req, res, ttlcache.DefaultTTL)
 }
 
 // StoreWithTTL stores the response in the cache with the specified TTL.
 // If you want to store the response with no TTL, use NoLimitTTL.
-func (c *DiskCache) StoreWithTTL(key string, res *http.Response, ttl time.Duration) error {
+func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Response, ttl time.Duration) error {
 	p := filepath.Join(c.cacheRoot, KeyToPath(key, 2))
 	dir := filepath.Dir(p)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -175,7 +175,7 @@ func (c *DiskCache) StoreWithTTL(key string, res *http.Response, ttl time.Durati
 	}
 	wc := &WriteCounter{Writer: f}
 	defer f.Close()
-	if err := EncodeResponse(res, wc); err != nil {
+	if err := EncodeReqRes(req, res, wc); err != nil {
 		return err
 	}
 	ci := &cacheItem{
@@ -196,26 +196,26 @@ func (c *DiskCache) StoreWithTTL(key string, res *http.Response, ttl time.Durati
 }
 
 // Load loads the response from the cache.
-func (c *DiskCache) Load(key string) (*http.Response, error) {
+func (c *DiskCache) Load(key string) (*http.Request, *http.Response, error) {
 	i := c.m.Get(key)
 	if i == nil {
-		return nil, ErrCacheNotFound
+		return nil, nil, ErrCacheNotFound
 	}
 	if i.IsExpired() {
-		return nil, ErrCacheExpired
+		return nil, nil, ErrCacheExpired
 	}
 	ci := i.Value()
 	f, err := os.Open(ci.path)
 	if err != nil {
 		c.m.Delete(key)
-		return nil, ErrCacheNotFound
+		return nil, nil, ErrCacheNotFound
 	}
 	defer f.Close()
-	res, err := DecodeResponse(f)
+	req, res, err := DecodeReqRes(f)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return res, nil
+	return req, res, nil
 }
 
 // Delete deletes the cache.

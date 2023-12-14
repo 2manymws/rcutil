@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -12,48 +13,59 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-func TestStoreAndDecodeResponse(t *testing.T) {
+func TestEncodeAndDecode(t *testing.T) {
 	tests := []struct {
-		res  *http.Response
-		want *http.Response
+		req     *http.Request
+		res     *http.Response
+		wantReq *http.Request
+		wantRes *http.Response
 	}{
 		{
-			res:  &http.Response{Body: newBody("")},
-			want: &http.Response{Body: newBody("")},
-		},
-		{
-			res:  &http.Response{Status: http.StatusText(http.StatusOK), StatusCode: http.StatusOK, Body: newBody("")},
-			want: &http.Response{StatusCode: http.StatusOK, Body: newBody("")},
-		},
-		{
-			res:  &http.Response{Header: http.Header{"X-Cache": []string{"HIT"}, "X-Hello": []string{"World"}}, Body: newBody("")},
-			want: &http.Response{Header: http.Header{"X-Cache": []string{"HIT"}, "X-Hello": []string{"World"}}, Body: newBody("")},
+			req:     &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody("req")},
+			res:     &http.Response{Body: newBody("")},
+			wantReq: &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody("req")},
+			wantRes: &http.Response{Body: newBody("")},
 		},
 	}
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			if err := EncodeResponse(tt.res, buf); err != nil {
+			if err := EncodeReqRes(tt.req, tt.res, buf); err != nil {
 				t.Fatal(err)
 			}
-			got, err := DecodeResponse(buf)
+			gotReq, gotRes, err := DecodeReqRes(buf)
 			if err != nil {
 				t.Fatal(err)
 			}
 			t.Cleanup(func() {
-				got.Body.Close()
-				tt.want.Body.Close()
+				gotReq.Body.Close()
+				gotRes.Body.Close()
+				tt.wantReq.Body.Close()
+				tt.wantRes.Body.Close()
 			})
 			opts := []cmp.Option{
 				cmpopts.IgnoreFields(http.Response{}, "Body"),
+				cmpopts.IgnoreFields(http.Request{}, "Body"),
+				cmpopts.IgnoreFields(http.Request{}, "ctx"),
 			}
-			if diff := cmp.Diff(tt.want, got, opts...); diff != "" {
+			if diff := cmp.Diff(tt.wantReq, gotReq, opts...); diff != "" {
 				t.Error(diff)
 			}
-			gotb := readBody(got.Body)
-			wantb := readBody(tt.want.Body)
+			gotb := readBody(gotReq.Body)
+			wantb := readBody(tt.wantReq.Body)
 			if diff := cmp.Diff(wantb, gotb); diff != "" {
 				t.Error(diff)
+			}
+
+			{
+				if diff := cmp.Diff(tt.wantRes, gotRes, opts...); diff != "" {
+					t.Error(diff)
+				}
+				gotb := readBody(gotRes.Body)
+				wantb := readBody(tt.wantRes.Body)
+				if diff := cmp.Diff(wantb, gotb); diff != "" {
+					t.Error(diff)
+				}
 			}
 		})
 	}
