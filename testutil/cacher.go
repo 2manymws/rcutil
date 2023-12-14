@@ -15,8 +15,7 @@ var (
 )
 
 type Cacher interface {
-	Name() string
-	Load(req *http.Request) (res *http.Response, err error)
+	Load(req *http.Request) (cachedReq *http.Request, cachedRes *http.Response, err error)
 	Store(req *http.Request, res *http.Response) error
 	Hit() int
 }
@@ -38,24 +37,19 @@ func NewAllCache(t testing.TB) *AllCache {
 	}
 }
 
-func (c *AllCache) Name() string {
-	c.t.Helper()
-	return "all"
-}
-
-func (c *AllCache) Load(req *http.Request) (*http.Response, error) {
+func (c *AllCache) Load(req *http.Request) (*http.Request, *http.Response, error) {
 	c.t.Helper()
 	seed, err := rcutil.Seed(req, []string{})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	key := seedToKey(seed)
-	res, err := c.dc.Load(key)
+	req, res, err := c.dc.Load(key)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	rcutil.SetCacheResultHeader(res, true)
-	return res, nil
+	return req, res, nil
 }
 
 func (c *AllCache) Store(req *http.Request, res *http.Response) error {
@@ -65,7 +59,7 @@ func (c *AllCache) Store(req *http.Request, res *http.Response) error {
 		return err
 	}
 	key := seedToKey(seed)
-	if err := c.dc.Store(key, res); err != nil {
+	if err := c.dc.Store(key, req, res); err != nil {
 		return err
 	}
 	return nil

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 )
@@ -28,43 +29,76 @@ func Seed(req *http.Request, vary []string) (string, error) {
 	return strings.ToLower(seed), nil
 }
 
-type cacheResponse struct {
+type cachedReqRes struct {
+	Method    string      `json:"method"`
+	URL       string      `json:"url"`
+	ReqHeader http.Header `json:"req_header"`
+	ReqBody   []byte      `json:"req_body"`
+
 	StatusCode int         `json:"status_code"`
-	Header     http.Header `json:"header"`
-	Body       []byte      `json:"body"`
+	ResHeader  http.Header `json:"res_header"`
+	ResBody    []byte      `json:"res_body"`
 }
 
-// EncodeResponse encodes http.Response.
-func EncodeResponse(res *http.Response, w io.Writer) error {
-	c := &cacheResponse{
+// EncodeReqRes encodes http.Request and http.Response.
+func EncodeReqRes(req *http.Request, res *http.Response, w io.Writer) error {
+	c := &cachedReqRes{
+		Method:    req.Method,
+		URL:       req.URL.String(),
+		ReqHeader: req.Header,
+
 		StatusCode: res.StatusCode,
-		Header:     res.Header,
+		ResHeader:  res.Header,
 	}
-	// FIXME: Use stream
-	b, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
+	{
+		// FIXME: Use stream
+		b, err := io.ReadAll(req.Body)
+		if err != nil {
+			return err
+		}
+		defer req.Body.Close()
+		c.ReqBody = b
 	}
-	defer res.Body.Close()
-	c.Body = b
+
+	{
+		// FIXME: Use stream
+		b, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+		c.ResBody = b
+	}
+
 	if err := json.NewEncoder(w).Encode(c); err != nil {
 		return err
 	}
 	return nil
 }
 
-// DecodeResponse decodes to http.Response.
-func DecodeResponse(r io.Reader) (*http.Response, error) {
-	c := &cacheResponse{}
+// DecodeReqRes decodes to http.Request and http.Response.
+func DecodeReqRes(r io.Reader) (*http.Request, *http.Response, error) {
+	c := &cachedReqRes{}
 	if err := json.NewDecoder(r).Decode(c); err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+	u, err := url.Parse(c.URL)
+	if err != nil {
+		return nil, nil, err
+	}
+	req := &http.Request{
+		Method: c.Method,
+		URL:    u,
+		Header: c.ReqHeader,
+		Body:   io.NopCloser(bytes.NewReader(c.ReqBody)),
 	}
 	res := &http.Response{
+		Status:     http.StatusText(c.StatusCode),
 		StatusCode: c.StatusCode,
-		Header:     c.Header,
-		Body:       io.NopCloser(bytes.NewReader(c.Body)),
+		Header:     c.ResHeader,
+		Body:       io.NopCloser(bytes.NewReader(c.ResBody)),
 	}
-	return res, nil
+	return req, res, nil
 }
 
 // KeyToPath converts key to path
