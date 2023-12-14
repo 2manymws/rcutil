@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.6.0](https://github.com/k1LoW/rcutil/compare/v0.5.0...v0.6.0) - 2023-12-14
+### Breaking Changes 🛠
+- Support for rc v0.4.0 by @k1LoW in https://github.com/k1LoW/rcutil/pull/18
+### Other Changes
+- Add gostyle-action by @k1LoW in https://github.com/k1LoW/rcutil/pull/15
+- Bump github.com/docker/docker from 20.10.24+incompatible to 24.0.7+incompatible by @dependabot in https://github.com/k1LoW/rcutil/pull/17
+
 ## [v0.5.0](https://github.com/k1LoW/rcutil/compare/v0.4.0...v0.5.0) - 2023-09-08
 ### Breaking Changes 🛠
 - Support warm-up of cache by @k1LoW in https://github.com/k1LoW/rcutil/pull/13
