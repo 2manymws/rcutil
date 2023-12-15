@@ -60,8 +60,8 @@ github.com/josharian/intern v1.0.0 h1:vlS4z54oSdjm0bgjRigI+G1HpF+tI+9rE5LLzOg8Hm
 github.com/josharian/intern v1.0.0/go.mod h1:5DoeVV0s6jJacbCEi61lwdGj/aVlrQvzHFFd8Hwg//Y=
 github.com/k1LoW/httpstub v0.11.1 h1:amfxTttNX82F12kmUr9vrptpLl+nCUzHrEpvUqoCWQ0=
 github.com/k1LoW/httpstub v0.11.1/go.mod h1:PYUmCF/2A7+TPhRPVJ4xSynM0O1x2mIjh+Tzd/DmiG8=
-github.com/k1LoW/rc v0.4.0 h1:f37KsxrZoINZu1o9dFqSGd00o2xJdf47GrB1d9nxEzY=
-github.com/k1LoW/rc v0.4.0/go.mod h1:3TrQ7Ya0QBjZihyo+iJHg7Ch6fIcD01w9BBRsDZzHZs=
+github.com/k1LoW/rc v0.5.0 h1:23hTvPY+1lwTxqYv/kT9G8OqBsr3kO92YZ7e6icznY8=
+github.com/k1LoW/rc v0.5.0/go.mod h1:3TrQ7Ya0QBjZihyo+iJHg7Ch6fIcD01w9BBRsDZzHZs=
 github.com/k1LoW/rp v0.8.0 h1:nfrArsglIpdfqBC2Dhg0+7MHDaZhwcOPWwOQlicTHRA=
 github.com/k1LoW/rp v0.8.0/go.mod h1:yIx02DG7bbtOFNy5us4BWCZ9q4n4u1YnNHo3YlYMQxk=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
