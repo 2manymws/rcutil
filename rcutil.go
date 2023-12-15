@@ -21,7 +21,8 @@ const (
 func Seed(req *http.Request, vary []string) (string, error) {
 	const sep = "|"
 	host := req.Host
-	if host == "" && strings.HasPrefix(host, "/") && req.URL.Host != "" {
+	if (host == "" || strings.HasPrefix(host, "/")) && req.URL.Host != "" {
+		// req.Host is empty or path prefix ( unix domain socket ).
 		host = req.URL.Hostname()
 	}
 	seed := req.Method + sep + host + sep + req.URL.Path + sep + req.URL.RawQuery
