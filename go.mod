@@ -5,8 +5,8 @@ go 1.21.5
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/jellydator/ttlcache/v3 v3.1.0
-	github.com/k1LoW/rc v0.4.0
-	github.com/k1LoW/rp v0.8.0
+	github.com/k1LoW/rc v0.5.0
+	github.com/k1LoW/rp v0.8.1
 	github.com/ory/dockertest/v3 v3.10.0
 	golang.org/x/sync v0.1.0
 )
@@ -24,6 +24,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/k1LoW/httpstub v0.11.1 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
