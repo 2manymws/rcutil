@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/k1LoW/rcutil"
+	"github.com/2manymws/rcutil"
 )
 
 var (

@@ -7,11 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/k1LoW/rc"
-	"github.com/k1LoW/rcutil"
-	"github.com/k1LoW/rcutil/testutil"
-	"github.com/k1LoW/rp"
-	testur "github.com/k1LoW/rp/testutil"
+	"github.com/2manymws/rc"
+	"github.com/2manymws/rcutil"
+	"github.com/2manymws/rcutil/testutil"
+	"github.com/2manymws/rp"
+	testur "github.com/2manymws/rp/testutil"
 )
 
 func BenchmarkNGINXCache(b *testing.B) {

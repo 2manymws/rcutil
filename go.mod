@@ -1,12 +1,12 @@
-module github.com/k1LoW/rcutil
+module github.com/2manymws/rcutil
 
 go 1.21.5
 
 require (
+	github.com/2manymws/rc v0.5.2
+	github.com/2manymws/rp v0.8.3
 	github.com/google/go-cmp v0.6.0
 	github.com/jellydator/ttlcache/v3 v3.1.0
-	github.com/k1LoW/rc v0.5.0
-	github.com/k1LoW/rp v0.8.1
 	github.com/ory/dockertest/v3 v3.10.0
 	golang.org/x/sync v0.1.0
 )
