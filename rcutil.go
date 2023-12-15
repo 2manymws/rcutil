@@ -20,7 +20,11 @@ const (
 // The return value seed is NOT path-safe.
 func Seed(req *http.Request, vary []string) (string, error) {
 	const sep = "|"
-	seed := req.Method + sep + req.URL.Path + sep + req.URL.RawQuery
+	host := req.Host
+	if host == "" && strings.HasPrefix(host, "/") && req.URL.Host != "" {
+		host = req.URL.Hostname()
+	}
+	seed := req.Method + sep + host + sep + req.URL.Path + sep + req.URL.RawQuery
 	for _, h := range vary {
 		if vv := req.Header.Get(h); vv != "" {
 			seed += sep + ":" + h + vv
@@ -31,6 +35,7 @@ func Seed(req *http.Request, vary []string) (string, error) {
 
 type cachedReqRes struct {
 	Method    string      `json:"method"`
+	Host      string      `json:"host"`
 	URL       string      `json:"url"`
 	ReqHeader http.Header `json:"req_header"`
 	ReqBody   []byte      `json:"req_body"`
@@ -44,6 +49,7 @@ type cachedReqRes struct {
 func EncodeReqRes(req *http.Request, res *http.Response, w io.Writer) error {
 	c := &cachedReqRes{
 		Method:    req.Method,
+		Host:      req.Host,
 		URL:       req.URL.String(),
 		ReqHeader: req.Header,
 
@@ -88,6 +94,7 @@ func DecodeReqRes(r io.Reader) (*http.Request, *http.Response, error) {
 	}
 	req := &http.Request{
 		Method: c.Method,
+		Host:   c.Host,
 		URL:    u,
 		Header: c.ReqHeader,
 		Body:   io.NopCloser(bytes.NewReader(c.ReqBody)),
