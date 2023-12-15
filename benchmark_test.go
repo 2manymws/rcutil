@@ -69,7 +69,7 @@ func BenchmarkDiscCache(b *testing.B) {
 
 	// Make cache
 	const (
-		concurrency = 100
+		concurrency = 1
 		cacherange  = 10000
 	)
 	testutil.WarmUpToCreateCache(b, proxy.URL, hostname, concurrency, cacherange)
