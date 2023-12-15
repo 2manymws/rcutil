@@ -29,6 +29,7 @@ type DiskCache struct {
 	maxTotalBytes      uint64
 	disableAutoCleanup bool
 	disableWarmUp      bool
+	enableTouchOnHit   bool
 	m                  *ttlcache.Cache[string, *cacheItem]
 	totalBytes         uint64
 	mu                 sync.Mutex
@@ -65,6 +66,13 @@ func DisableWarmUp() DiskCacheOption {
 	}
 }
 
+// EnableTouchOnHit enables the touch on hit feature.
+func EnableTouchOnHit() DiskCacheOption {
+	return func(c *DiskCache) {
+		c.enableTouchOnHit = true
+	}
+}
+
 // Metrics returns the metrics of the cache.
 type Metrics struct {
 	ttlcache.Metrics
@@ -98,6 +106,10 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	if c.maxKeys > 0 {
 		mopts = append(mopts, ttlcache.WithCapacity[string, *cacheItem](c.maxKeys))
 	}
+	if !c.enableTouchOnHit {
+		mopts = append(mopts, ttlcache.WithDisableTouchOnHit[string, *cacheItem]())
+	}
+
 	c.m = ttlcache.New(mopts...)
 	c.m.OnEviction(func(ctx context.Context, r ttlcache.EvictionReason, i *ttlcache.Item[string, *cacheItem]) {
 		ci := i.Value()
