@@ -20,12 +20,7 @@ const (
 // The return value seed is NOT path-safe.
 func Seed(req *http.Request, vary []string) (string, error) {
 	const sep = "|"
-	host := req.Host
-	if (host == "" || strings.HasPrefix(host, "/")) && req.URL.Host != "" {
-		// req.Host is empty or path prefix ( unix domain socket ).
-		host = req.URL.Hostname()
-	}
-	seed := req.Method + sep + host + sep + req.URL.Path + sep + req.URL.RawQuery
+	seed := req.Method + sep + req.Host + sep + req.URL.Host + sep + req.URL.Path + sep + req.URL.RawQuery
 	for _, h := range vary {
 		if vv := req.Header.Get(h); vv != "" {
 			seed += sep + ":" + h + vv
