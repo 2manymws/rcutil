@@ -1,5 +1,7 @@
 # Changelog
 
+## [v0.7.1](https://github.com/2manymws/rcutil/compare/v0.7.0...v0.7.1) - 2023-12-15
+
 ## [v0.7.0](https://github.com/k1LoW/rcutil/compare/v0.6.0...v0.7.0) - 2023-12-15
 ### Breaking Changes 🛠
 - Disable touch on hit by default by @k1LoW in https://github.com/k1LoW/rcutil/pull/19
