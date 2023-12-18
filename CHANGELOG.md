@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.7.2](https://github.com/2manymws/rcutil/compare/v0.7.1...v0.7.2) - 2023-12-18
+### Other Changes
+- Usr rc.Err* by @k1LoW in https://github.com/2manymws/rcutil/pull/24
+
 ## [v0.7.1](https://github.com/2manymws/rcutil/compare/v0.7.0...v0.7.1) - 2023-12-15
 
 ## [v0.7.0](https://github.com/k1LoW/rcutil/compare/v0.6.0...v0.7.0) - 2023-12-15
