@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/2manymws/rc"
 	"github.com/jellydator/ttlcache/v3"
 )
 
@@ -211,16 +212,16 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 func (c *DiskCache) Load(key string) (*http.Request, *http.Response, error) {
 	i := c.m.Get(key)
 	if i == nil {
-		return nil, nil, ErrCacheNotFound
+		return nil, nil, rc.ErrCacheNotFound
 	}
 	if i.IsExpired() {
-		return nil, nil, ErrCacheExpired
+		return nil, nil, rc.ErrCacheExpired
 	}
 	ci := i.Value()
 	f, err := os.Open(ci.path)
 	if err != nil {
 		c.m.Delete(key)
-		return nil, nil, ErrCacheNotFound
+		return nil, nil, rc.ErrCacheNotFound
 	}
 	defer f.Close()
 	req, res, err := DecodeReqRes(f)

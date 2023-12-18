@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/2manymws/rc"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
@@ -50,7 +51,7 @@ func TestDiskCacheTTL(t *testing.T) {
 	time.Sleep(ttl)
 	{
 		_, _, err := dc.Load(key)
-		if !errors.Is(err, ErrCacheNotFound) {
+		if !errors.Is(err, rc.ErrCacheNotFound) {
 			t.Error(err)
 		}
 	}
@@ -89,7 +90,7 @@ func TestDiskCacheMaxKeys(t *testing.T) {
 	{
 		key := "test0"
 		_, _, err := dc.Load(key)
-		if !errors.Is(err, ErrCacheNotFound) {
+		if !errors.Is(err, rc.ErrCacheNotFound) {
 			t.Error(err)
 		}
 	}
