@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.7.3](https://github.com/2manymws/rcutil/compare/v0.7.2...v0.7.3) - 2023-12-22
+### Other Changes
+- Check cacheRoot writable by @k1LoW in https://github.com/2manymws/rcutil/pull/25
+
 ## [v0.7.2](https://github.com/2manymws/rcutil/compare/v0.7.1...v0.7.2) - 2023-12-18
 ### Other Changes
 - Usr rc.Err* by @k1LoW in https://github.com/2manymws/rcutil/pull/24
