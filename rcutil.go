@@ -23,7 +23,7 @@ func Seed(req *http.Request, vary []string) (string, error) {
 	seed := req.Method + sep + req.Host + sep + req.URL.Host + sep + req.URL.Path + sep + req.URL.RawQuery
 	for _, h := range vary {
 		if vv := req.Header.Get(h); vv != "" {
-			seed += sep + ":" + h + vv
+			seed += sep + h + ":" + vv
 		}
 	}
 	return strings.ToLower(seed), nil
