@@ -2,6 +2,7 @@ package rcutil
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
@@ -92,6 +93,9 @@ type cacheItem struct {
 // maxKeys: the maximum number of keys that can be stored in the cache. If NoLimitKeys is specified, there is no limit.
 // maxTotalBytes: the maximum number of bytes that can be stored in the cache. If NoLimitTotalBytes is specified, there is no limit.
 func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheOption) (*DiskCache, error) {
+	if ok, err := isWritable(cacheRoot); !ok {
+		return nil, fmt.Errorf("cache root %q is not writable: %w", cacheRoot, err)
+	}
 	c := &DiskCache{
 		cacheRoot:     cacheRoot,
 		maxKeys:       NoLimitKeys,
@@ -246,4 +250,15 @@ func (c *DiskCache) Metrics() Metrics {
 		TotalBytes: c.totalBytes,
 		KeyCount:   uint64(len(c.m.Keys())),
 	}
+}
+
+func isWritable(dir string) (bool, error) {
+	const tmpFile = "tmpfile"
+	file, err := os.CreateTemp(dir, tmpFile)
+	if err != nil {
+		return false, err
+	}
+	defer os.Remove(file.Name())
+	defer file.Close()
+	return true, nil
 }
