@@ -82,6 +82,10 @@ func TestKeyToPath(t *testing.T) {
 		{"abcde", 2, "ab/cd/e"},
 		{"abcdef", 2, "ab/cd/ef"},
 		{"abcdefg", 2, "ab/cd/ef/g"},
+		{"abcdefg", 3, "abc/def/g"},
+		{"abcdefg", 10, "abcdefg"},
+		{"abcdefg", 0, "abcdefg"},
+		{"abcdefg", -1, "abcdefg"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.key, func(t *testing.T) {

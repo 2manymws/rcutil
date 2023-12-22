@@ -22,6 +22,8 @@ const (
 	NoLimitTotalBytes = 0
 	// NoLimitTTL is a special value that means no limit on the TTL.
 	NoLimitTTL = ttlcache.NoTTL
+	// DefaultCacheDirLen is the default length of the cache directory name.
+	DefaultCacheDirLen = 2
 )
 
 // DiskCache is a disk cache implementation.
@@ -34,6 +36,7 @@ type DiskCache struct {
 	enableTouchOnHit   bool
 	m                  *ttlcache.Cache[string, *cacheItem]
 	totalBytes         uint64
+	cacheDirLen        int
 	mu                 sync.Mutex
 }
 
@@ -100,6 +103,7 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 		cacheRoot:     cacheRoot,
 		maxKeys:       NoLimitKeys,
 		maxTotalBytes: NoLimitTotalBytes,
+		cacheDirLen:   DefaultCacheDirLen,
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -181,7 +185,7 @@ func (c *DiskCache) Store(key string, req *http.Request, res *http.Response) err
 // StoreWithTTL stores the response in the cache with the specified TTL.
 // If you want to store the response with no TTL, use NoLimitTTL.
 func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Response, ttl time.Duration) error {
-	p := filepath.Join(c.cacheRoot, KeyToPath(key, 2))
+	p := filepath.Join(c.cacheRoot, KeyToPath(key, c.cacheDirLen))
 	dir := filepath.Dir(p)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
