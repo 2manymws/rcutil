@@ -107,6 +107,9 @@ func DecodeReqRes(r io.Reader) (*http.Request, *http.Response, error) {
 // KeyToPath converts key to path
 // It is the responsibility of the user to pass path-safe keys
 func KeyToPath(key string, n int) string {
+	if n <= 0 {
+		return key
+	}
 	var result strings.Builder
 	l := len(key)
 	for i, char := range key {
