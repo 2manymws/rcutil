@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.8.1](https://github.com/2manymws/rcutil/compare/v0.8.0...v0.8.1) - 2023-12-22
+### Breaking Changes 🛠
+- Fix Seed logic by @k1LoW in https://github.com/2manymws/rcutil/pull/29
+
 ## [v0.8.0](https://github.com/2manymws/rcutil/compare/v0.7.3...v0.8.0) - 2023-12-22
 ### New Features 🎉
 - Support for changing the directory name length in the disk cache. by @k1LoW in https://github.com/2manymws/rcutil/pull/27
