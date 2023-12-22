@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.8.0](https://github.com/2manymws/rcutil/compare/v0.7.3...v0.8.0) - 2023-12-22
+### New Features 🎉
+- Support for changing the directory name length in the disk cache. by @k1LoW in https://github.com/2manymws/rcutil/pull/27
+
 ## [v0.7.3](https://github.com/2manymws/rcutil/compare/v0.7.2...v0.7.3) - 2023-12-22
 ### Other Changes
 - Check cacheRoot writable by @k1LoW in https://github.com/2manymws/rcutil/pull/25
