@@ -3,6 +3,7 @@ package rcutil
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -16,9 +17,18 @@ const (
 	CacheMiss         = "MISS"
 )
 
+var ErrNoRequest = errors.New("no request")
+var ErrInvalidRequest = errors.New("invalid request")
+
 // Seed returns seed for cache key.
 // The return value seed is NOT path-safe.
 func Seed(req *http.Request, vary []string) (string, error) {
+	if req == nil {
+		return "", ErrNoRequest
+	}
+	if req.URL == nil {
+		return "", ErrInvalidRequest
+	}
 	const sep = "|"
 	seed := req.Method + sep + req.Host + sep + req.URL.Host + sep + req.URL.Path + sep + req.URL.RawQuery
 	for _, h := range vary {
