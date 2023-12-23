@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.8.2](https://github.com/2manymws/rcutil/compare/v0.8.1...v0.8.2) - 2023-12-23
+### Other Changes
+- Set error for Seed() by @k1LoW in https://github.com/2manymws/rcutil/pull/31
+
 ## [v0.8.1](https://github.com/2manymws/rcutil/compare/v0.8.0...v0.8.1) - 2023-12-22
 ### Breaking Changes 🛠
 - Fix Seed logic by @k1LoW in https://github.com/2manymws/rcutil/pull/29
