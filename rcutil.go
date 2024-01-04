@@ -29,6 +29,9 @@ func Seed(req *http.Request, vary []string) (string, error) {
 	if req.URL == nil {
 		return "", ErrInvalidRequest
 	}
+	if req.Host == "" {
+		return "", ErrInvalidRequest
+	}
 	const sep = "|"
 	// Use req.Host ( does not use req.URL.Host )
 	// See https://httpwg.org/specs/rfc9110.html#rfc.section.7.1 and https://httpwg.org/specs/rfc9110.html#rfc.section.7.2
