@@ -30,7 +30,9 @@ func Seed(req *http.Request, vary []string) (string, error) {
 		return "", ErrInvalidRequest
 	}
 	const sep = "|"
-	seed := req.Method + sep + req.Host + sep + req.URL.Host + sep + req.URL.Path + sep + req.URL.RawQuery
+	// Use req.Host ( does not use req.URL.Host )
+	// See https://httpwg.org/specs/rfc9110.html#rfc.section.7.1 and https://httpwg.org/specs/rfc9110.html#rfc.section.7.2
+	seed := req.Method + sep + req.Host + sep + req.URL.Path + sep + req.URL.RawQuery
 	for _, h := range vary {
 		if vv := req.Header.Get(h); vv != "" {
 			seed += sep + h + ":" + vv
