@@ -40,7 +40,7 @@ func TestSeed(t *testing.T) {
 				},
 			},
 			nil,
-			"get|example.com|example.com|/foo|",
+			"get|example.com|/foo|",
 			false,
 		},
 		{
@@ -53,7 +53,7 @@ func TestSeed(t *testing.T) {
 				},
 			},
 			nil,
-			"post|example.com|127.0.0.1|/foo|",
+			"post|example.com|/foo|",
 			false,
 		},
 		{
@@ -67,7 +67,7 @@ func TestSeed(t *testing.T) {
 				},
 			},
 			nil,
-			"get|example.com|127.0.0.1|/foo|a=1&b=2",
+			"get|example.com|/foo|a=1&b=2",
 			false,
 		},
 	}
