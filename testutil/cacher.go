@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/2manymws/rcutil"
 )
@@ -16,7 +17,7 @@ var (
 
 type Cacher interface {
 	Load(req *http.Request) (cachedReq *http.Request, cachedRes *http.Response, err error)
-	Store(req *http.Request, res *http.Response) error
+	Store(req *http.Request, res *http.Response, now time.Time) error
 	Hit() int
 }
 
@@ -52,7 +53,7 @@ func (c *AllCache) Load(req *http.Request) (*http.Request, *http.Response, error
 	return req, res, nil
 }
 
-func (c *AllCache) Store(req *http.Request, res *http.Response) error {
+func (c *AllCache) Store(req *http.Request, res *http.Response, _ time.Time) error {
 	c.t.Helper()
 	seed, err := rcutil.Seed(req, []string{})
 	if err != nil {
