@@ -2,9 +2,13 @@ package rcutil_test
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/2manymws/rc"
@@ -96,4 +100,44 @@ func BenchmarkDiscCache(b *testing.B) {
 			}
 		}
 	})
+}
+
+func BenchmarkEncodeDecode1MB(b *testing.B) {
+	const bodySize = 1024 * 1024 // 1MB
+	var sb strings.Builder
+	sb.Grow(bodySize)
+	for i := 0; i < 1048577; i++ {
+		sb.WriteByte(0)
+	}
+	dir := b.TempDir()
+	p := filepath.Join(dir, "cachefile")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		req := httptest.NewRequest("GET", "http://example.com", nil)
+		res := &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{},
+			Body:       io.NopCloser(strings.NewReader(sb.String())),
+		}
+		c, err := os.Create(p)
+		if err != nil {
+			b.Error(err)
+			return
+		}
+		if err := rcutil.EncodeReqRes(req, res, c); err != nil {
+			b.Error(err)
+			return
+		}
+		_ = c.Close()
+		cc, err := os.Open(p)
+		if err != nil {
+			b.Error(err)
+			return
+		}
+		if _, _, err := rcutil.DecodeReqRes(cc); err != nil {
+			b.Error(err)
+			return
+		}
+	}
 }
