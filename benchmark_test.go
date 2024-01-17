@@ -129,13 +129,20 @@ func BenchmarkEncodeDecode1MB(b *testing.B) {
 			b.Error(err)
 			return
 		}
-		_ = c.Close()
+		if err := c.Close(); err != nil {
+			b.Error(err)
+			return
+		}
 		cc, err := os.Open(p)
 		if err != nil {
 			b.Error(err)
 			return
 		}
 		if _, _, err := rcutil.DecodeReqRes(cc); err != nil {
+			b.Error(err)
+			return
+		}
+		if err := cc.Close(); err != nil {
 			b.Error(err)
 			return
 		}
