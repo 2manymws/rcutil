@@ -1,3 +1,5 @@
+github.com/2manymws/keyrwmutex v1.1.0 h1:bbLy7W+y0RboOTTxAtzP/0f29KKmso9ovKYw42aQomk=
+github.com/2manymws/keyrwmutex v1.1.0/go.mod h1:aT/Xb3zc1kZutxaX9+nsl85bhGqGD5px5Q6p3S9F0AI=
 github.com/2manymws/rc v0.9.1 h1:c680TRwD0U6D7MVNqjsabKMk5ZhervFv5oaHDidzZnU=
 github.com/2manymws/rc v0.9.1/go.mod h1:18sJ3Sj77Na6NbRKUjZ7aU80G0OsFEaEGLU0j9oHoAc=
 github.com/2manymws/rp v0.8.3 h1:PpoYcPFdCfvOChabNvGp1ZWQCTZim55/UbIsAQErARE=
@@ -189,3 +191,5 @@ gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gotest.tools/v3 v3.0.2/go.mod h1:3SzNCllyD9/Y+b5r9JIKQ474KzkZyqLqEfYqMsX94Bk=
 gotest.tools/v3 v3.3.0 h1:MfDY1b1/0xN1CyMlQDac0ziEy9zJQd9CXBRRDHw2jJo=
 gotest.tools/v3 v3.3.0/go.mod h1:Mcr9QNxkg0uMvy/YElmo4SpXgJKWgQvYrT7Kw5RzJ1A=
+k8s.io/utils v0.0.0-20240102154912-e7106e64919e h1:eQ/4ljkx21sObifjzXwlPKpdGLrCfRziVtos3ofG/sQ=
+k8s.io/utils v0.0.0-20240102154912-e7106e64919e/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
