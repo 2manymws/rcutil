@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.10.0](https://github.com/2manymws/rcutil/compare/v0.9.0...v0.10.0) - 2024-01-17
+### New Features 🎉
+- Use RWLock when Load/Store caches by @k1LoW in https://github.com/2manymws/rcutil/pull/38
+### Other Changes
+- Use rc v0.9.0 by @k1LoW in https://github.com/2manymws/rcutil/pull/35
+- Use rc v0.9.1 by @k1LoW in https://github.com/2manymws/rcutil/pull/36
+
 ## [v0.9.0](https://github.com/2manymws/rcutil/compare/v0.8.2...v0.9.0) - 2024-01-04
 ### Breaking Changes 🛠
 - Use req.Host ( does not use req.URL.Host ) by @k1LoW in https://github.com/2manymws/rcutil/pull/33
