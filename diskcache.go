@@ -127,7 +127,9 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	c.m.OnEviction(func(ctx context.Context, r ttlcache.EvictionReason, i *ttlcache.Item[string, *cacheItem]) {
 		ci := i.Value()
 		c.keyMu.LockKey(ci.key)
-		defer c.keyMu.UnlockKey(ci.key)
+		defer func() {
+			_ = c.keyMu.UnlockKey(ci.key)
+		}()
 		_ = os.Remove(ci.path)
 		c.mu.Lock()
 		c.totalBytes -= ci.bytes
@@ -192,7 +194,9 @@ func (c *DiskCache) Store(key string, req *http.Request, res *http.Response) err
 // If you want to store the response with no TTL, use NoLimitTTL.
 func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Response, ttl time.Duration) error {
 	c.keyMu.LockKey(key)
-	defer c.keyMu.UnlockKey(key)
+	defer func() {
+		_ = c.keyMu.UnlockKey(key)
+	}()
 	p := filepath.Join(c.cacheRoot, KeyToPath(key, c.cacheDirLen))
 	dir := filepath.Dir(p)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -228,7 +232,9 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 // Load loads the response from the cache.
 func (c *DiskCache) Load(key string) (*http.Request, *http.Response, error) {
 	c.keyMu.RLockKey(key)
-	defer c.keyMu.RUnlockKey(key)
+	defer func() {
+		_ = c.keyMu.RUnlockKey(key)
+	}()
 	i := c.m.Get(key)
 	if i == nil {
 		return nil, nil, rc.ErrCacheNotFound
