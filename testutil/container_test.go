@@ -19,7 +19,6 @@ func TestContainer(t *testing.T) {
 	b, _ := httputil.DumpResponse(res, true)
 	_, _ = fmt.Fprintf(os.Stderr, "echo NGINX server:\n%s\n", (string(b)))
 	defer res.Body.Close()
-
 	upstreams := map[string]string{}
 	upstreams[upstream] = fmt.Sprintf("http://%s:80", "a.example.com")
 

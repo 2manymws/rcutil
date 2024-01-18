@@ -22,12 +22,12 @@ const (
 )
 
 //go:embed templates/*
-var conf embed.FS
+var templates embed.FS
 
 func NewReverseProxyNGINXServer(t testing.TB, hostname string, upstreams map[string]string) string {
 	t.Helper()
 	dir := t.TempDir()
-	tb, err := conf.ReadFile("templates/nginx_reverse.conf.tmpl")
+	tb, err := templates.ReadFile("templates/nginx_reverse.conf.tmpl")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,46 +52,58 @@ func NewReverseProxyNGINXServer(t testing.TB, hostname string, upstreams map[str
 		t.Logf("%s NGINX config:\n%s\n", hostname, string(b))
 	}
 
-	return createNGINXServer(t, hostname, p)
+	return createNGINXServer(t, hostname, p, p)
 }
 
 func NewUpstreamEchoNGINXServer(t testing.TB, hostname string, bodySize int) string {
 	t.Helper()
 	dir := t.TempDir()
-	tb, err := conf.ReadFile("templates/nginx_echo.conf.tmpl")
+	cb, err := templates.ReadFile("templates/nginx_echo.conf.tmpl")
 	if err != nil {
 		t.Fatal(err)
 	}
-	plusBody := strings.Repeat("a", bodySize)
-
-	tmpl := template.Must(template.New("conf").Parse(string(tb)))
-	p := filepath.Join(dir, fmt.Sprintf("%s.nginx_echo.conf", hostname))
-	f, err := os.Create(p)
+	confp := filepath.Join(dir, fmt.Sprintf("%s.nginx_echo.conf", hostname))
+	if err := os.WriteFile(confp, cb, os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+	tb, err := templates.ReadFile("templates/index.html.tmpl")
 	if err != nil {
 		t.Fatal(err)
+	}
+	indexp := filepath.Join(dir, "index.html")
+	tmpl := template.Must(template.New("index").Parse(string(tb)))
+	f, err := os.Create(indexp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var s strings.Builder
+	s.Grow(bodySize)
+	for i := 0; i < bodySize; i++ {
+		if err := s.WriteByte(0); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err := tmpl.Execute(f, map[string]any{
 		"Hostname": hostname,
-		"PlusBody": plusBody,
+		"PlusBody": s.String(),
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
-
 	if os.Getenv("DEBUG") != "" {
-		b, _ := os.ReadFile(p)
+		b, _ := os.ReadFile(confp)
 		t.Logf("%s NGINX config:\n%s\n", hostname, string(b))
 	}
 
-	return createNGINXServer(t, hostname, p)
+	return createNGINXServer(t, hostname, confp, indexp)
 }
 
-func createNGINXServer(t testing.TB, hostname, confp string) string {
+func createNGINXServer(t testing.TB, hostname, confp, indexp string) string {
 	t.Helper()
 	dir := t.TempDir()
-	sb, err := conf.ReadFile("templates/sleep.js")
+	sb, err := templates.ReadFile("templates/sleep.js")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,6 +123,7 @@ func createNGINXServer(t testing.TB, hostname, confp string) string {
 		Tag:        "latest",
 		Networks:   []*dockertest.Network{testNetwork(t)},
 		Mounts: []string{
+			fmt.Sprintf("%s:/etc/nginx/index.html:ro", indexp),
 			fmt.Sprintf("%s:/etc/nginx/nginx.conf:ro", confp),
 			fmt.Sprintf("%s:/etc/nginx/njs/sleep.js:ro", sp),
 		},
