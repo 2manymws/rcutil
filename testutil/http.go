@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func WarmUpToCreateCache(t testing.TB, urlstr, hostname string, concurrency, cacherange) {
+func WarmUpToCreateCache(t testing.TB, urlstr, hostname string, concurrency, cacherange int) {
 	limitCh := make(chan struct{}, concurrency)
 	eg := new(errgroup.Group)
 	for i := 0; i < cacherange; i++ {
