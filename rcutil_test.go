@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -86,6 +86,10 @@ func TestSeed(t *testing.T) {
 }
 
 func TestEncodeAndDecode(t *testing.T) {
+	image, err := os.ReadFile("testdata/2manymws.png")
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		req     *http.Request
 		res     *http.Response
@@ -93,10 +97,16 @@ func TestEncodeAndDecode(t *testing.T) {
 		wantRes *http.Response
 	}{
 		{
-			req:     &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody("req")},
-			res:     &http.Response{Body: newBody("")},
-			wantReq: &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody("req")},
-			wantRes: &http.Response{Body: newBody("")},
+			req:     &http.Request{Method: http.MethodGet, Header: http.Header{"Content-Type": []string{"text/plain"}}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			res:     &http.Response{StatusCode: http.StatusOK, Header: http.Header{"X-Cache": []string{"MISS"}}, Body: newBody(nil)},
+			wantReq: &http.Request{Method: http.MethodGet, Header: http.Header{"Content-Type": []string{"text/plain"}}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			wantRes: &http.Response{Status: http.StatusText(http.StatusOK), StatusCode: http.StatusOK, Header: http.Header{"X-Cache": []string{"MISS"}}, Body: newBody(nil)},
+		},
+		{
+			req:     &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			res:     &http.Response{Body: newBody(image)},
+			wantReq: &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			wantRes: &http.Response{Body: newBody(image)},
 		},
 	}
 	for i, tt := range tests {
@@ -169,8 +179,8 @@ func TestKeyToPath(t *testing.T) {
 	}
 }
 
-func newBody(s string) io.ReadCloser {
-	return io.NopCloser(strings.NewReader(s))
+func newBody(b []byte) io.ReadCloser {
+	return io.NopCloser(bytes.NewReader(b))
 }
 
 func readBody(r io.ReadCloser) string {

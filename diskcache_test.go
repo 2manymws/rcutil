@@ -22,12 +22,12 @@ func TestDiskCacheTTL(t *testing.T) {
 	}
 	key := "test"
 	want := "hello"
-	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody("req")}
+	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
 	res := &http.Response{
 		Status:     http.StatusText(http.StatusOK),
 		StatusCode: http.StatusOK,
 		Header:     http.Header{"X-Test": []string{"test"}},
-		Body:       newBody(want),
+		Body:       newBody([]byte(want)),
 	}
 	if err := dc.Store(key, req, res); err != nil {
 		t.Fatal(err)
@@ -67,12 +67,12 @@ func TestDiskCacheMaxKeys(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		key := fmt.Sprintf("test%d", i)
 		body := "hello"
-		req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody("req")}
+		req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
 		res := &http.Response{
 			Status:     http.StatusText(http.StatusOK),
 			StatusCode: http.StatusOK,
 			Header:     http.Header{"X-Test": []string{"test"}},
-			Body:       newBody(body),
+			Body:       newBody([]byte(body)),
 		}
 		if err := dc.Store(key, req, res); err != nil {
 			t.Fatal(err)
@@ -104,12 +104,12 @@ func TestDiskCacheMaxTotalBytes(t *testing.T) {
 		t.Fatal(err)
 	}
 	key := "test1"
-	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody("req")}
+	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
 	res := &http.Response{
 		Status:     http.StatusText(http.StatusOK),
 		StatusCode: http.StatusOK,
 		Header:     http.Header{"X-Test": []string{"test"}},
-		Body:       newBody("hello"),
+		Body:       newBody([]byte("hello")),
 	}
 	if err := dc.Store(key, req, res); err != nil {
 		t.Fatal(err)
@@ -122,12 +122,12 @@ func TestDiskCacheMaxTotalBytes(t *testing.T) {
 func TestDiskCacheWarmUp(t *testing.T) {
 	root := t.TempDir()
 	key := "test"
-	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody("req")}
+	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
 	res := &http.Response{
 		Status:     http.StatusText(http.StatusOK),
 		StatusCode: http.StatusOK,
 		Header:     http.Header{"X-Test": []string{"test"}},
-		Body:       newBody("hello"),
+		Body:       newBody([]byte("hello")),
 	}
 
 	dc0, err := NewDiskCache(root, 24*time.Hour)
