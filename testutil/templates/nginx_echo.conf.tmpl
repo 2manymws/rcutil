@@ -23,7 +23,8 @@ http {
 
         location / {
             add_header Cache-Control public,max-age=3600;
-            return 200 "OK from {{ .Hostname }}!!";
+            root /etc/nginx;
+            try_files /index.html =404;
         }
     }
 }

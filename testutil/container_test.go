@@ -11,7 +11,7 @@ import (
 
 func TestContainer(t *testing.T) {
 	upstream := "a.example.com"
-	urlstr := NewUpstreamEchoNGINXServer(t, upstream)
+	urlstr := NewUpstreamEchoNGINXServer(t, upstream, 1024)
 	res, err := http.DefaultClient.Get(urlstr)
 	if err != nil {
 		t.Fatal(err)
@@ -19,7 +19,6 @@ func TestContainer(t *testing.T) {
 	b, _ := httputil.DumpResponse(res, true)
 	_, _ = fmt.Fprintf(os.Stderr, "echo NGINX server:\n%s\n", (string(b)))
 	defer res.Body.Close()
-
 	upstreams := map[string]string{}
 	upstreams[upstream] = fmt.Sprintf("http://%s:80", "a.example.com")
 
