@@ -9,7 +9,7 @@ http {
     sendfile on;
     keepalive_timeout 65;
 
-    proxy_cache_path /var/cache/nginx keys_zone=zone1:100m max_size=100m;
+    proxy_cache_path /var/cache/nginx keys_zone=zone1:100m max_size=1500m;
     proxy_temp_path  /tmp;
 
 {{ range $hostname, $pass := .Upstreams }}
