@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.11.0](https://github.com/2manymws/rcutil/compare/v0.10.0...v0.11.0) - 2024-01-18
+### Breaking Changes 🛠
+- Use gob instead of json for cache by @k1LoW in https://github.com/2manymws/rcutil/pull/41
+### Other Changes
+- Add benchmark for encoding/decoding by @k1LoW in https://github.com/2manymws/rcutil/pull/39
+- Fix benchmark by @k1LoW in https://github.com/2manymws/rcutil/pull/42
+- Add test for encoding images in the cache. by @k1LoW in https://github.com/2manymws/rcutil/pull/43
+
 ## [v0.10.0](https://github.com/2manymws/rcutil/compare/v0.9.0...v0.10.0) - 2024-01-17
 ### New Features 🎉
 - Use RWLock when Load/Store caches by @k1LoW in https://github.com/2manymws/rcutil/pull/38
