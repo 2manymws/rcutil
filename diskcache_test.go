@@ -98,7 +98,7 @@ func TestDiskCacheMaxKeys(t *testing.T) {
 
 func TestDiskCacheMaxTotalBytes(t *testing.T) {
 	root := t.TempDir()
-	maxTotalBytes := uint64(len(`{"method":"GET","host":"","url":"/foo","req_header":{},"req_body":"cmVx","status_code":200,"res_header":{"X-Test":["test"]},"res_body":"aGVsbG8="}`+"\n") + 1)
+	maxTotalBytes := uint64(209)
 	dc, err := NewDiskCache(root, 24*time.Hour, MaxTotalBytes(maxTotalBytes))
 	if err != nil {
 		t.Fatal(err)
