@@ -31,7 +31,7 @@ func BenchmarkNGINXCache1MBBody(b *testing.B) {
 	// Make cache
 	const (
 		concurrency = 1
-		cacherange  = 10000
+		cacherange  = 1000
 	)
 	testutil.WarmUpToCreateCache(b, proxy, hostname, concurrency, cacherange)
 
@@ -80,7 +80,7 @@ func BenchmarkDiscCache1MBBody(b *testing.B) {
 	// Make cache
 	const (
 		concurrency = 1
-		cacherange  = 10000
+		cacherange  = 1000
 	)
 	testutil.WarmUpToCreateCache(b, proxy.URL, hostname, concurrency, cacherange)
 
