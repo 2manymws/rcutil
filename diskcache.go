@@ -222,7 +222,7 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 		if err := os.Remove(p); err != nil {
 			return err
 		}
-		return ErrCacheFull
+		return fmt.Errorf("%w (%d bytes >= %d bytes)", ErrCacheFull, c.totalBytes+wc.Bytes, c.maxTotalBytes)
 	}
 	c.m.Set(key, ci, ttl)
 	c.totalBytes += wc.Bytes

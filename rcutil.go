@@ -2,7 +2,7 @@ package rcutil
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/gob"
 	"errors"
 	"io"
 	"net/http"
@@ -87,7 +87,7 @@ func EncodeReqRes(req *http.Request, res *http.Response, w io.Writer) error {
 		c.ResBody = b
 	}
 
-	if err := json.NewEncoder(w).Encode(c); err != nil {
+	if err := gob.NewEncoder(w).Encode(c); err != nil {
 		return err
 	}
 	return nil
@@ -96,7 +96,7 @@ func EncodeReqRes(req *http.Request, res *http.Response, w io.Writer) error {
 // DecodeReqRes decodes to http.Request and http.Response.
 func DecodeReqRes(r io.Reader) (*http.Request, *http.Response, error) {
 	c := &cachedReqRes{}
-	if err := json.NewDecoder(r).Decode(c); err != nil {
+	if err := gob.NewDecoder(r).Decode(c); err != nil {
 		return nil, nil, err
 	}
 	u, err := url.Parse(c.URL)
