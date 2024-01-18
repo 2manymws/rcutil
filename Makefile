@@ -10,7 +10,7 @@ test:
 	mv coverage.filtered.out coverage.out
 
 benchmark:
-	go test -bench . -benchmem -benchtime 10000x -run Benchmark | octocov-go-test-bench --tee > custom_metrics_benchmark.json
+	go test -bench . -benchmem -benchtime 1000x | octocov-go-test-bench --tee > custom_metrics_benchmark.json
 
 lint:
 	golangci-lint run ./...
