@@ -97,10 +97,10 @@ func TestEncodeAndDecode(t *testing.T) {
 		wantRes *http.Response
 	}{
 		{
-			req:     &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
-			res:     &http.Response{Body: newBody(nil)},
-			wantReq: &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
-			wantRes: &http.Response{Body: newBody(nil)},
+			req:     &http.Request{Method: http.MethodGet, Header: http.Header{"Content-Type": []string{"text/plain"}}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			res:     &http.Response{StatusCode: http.StatusOK, Header: http.Header{"X-Cache": []string{"MISS"}}, Body: newBody(nil)},
+			wantReq: &http.Request{Method: http.MethodGet, Header: http.Header{"Content-Type": []string{"text/plain"}}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			wantRes: &http.Response{Status: http.StatusText(http.StatusOK), StatusCode: http.StatusOK, Header: http.Header{"X-Cache": []string{"MISS"}}, Body: newBody(nil)},
 		},
 		{
 			req:     &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
