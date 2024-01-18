@@ -112,7 +112,7 @@ func BenchmarkEncodeDecode1MBBody(b *testing.B) {
 	const bodySize = 1024 * 1024 // 1MB
 	var sb strings.Builder
 	sb.Grow(bodySize)
-	for i := 0; i < 1048577; i++ {
+	for i := 0; i < bodySize; i++ {
 		sb.WriteByte(0)
 	}
 	dir := b.TempDir()
