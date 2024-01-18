@@ -23,7 +23,7 @@ http {
 
         location / {
             add_header Cache-Control public,max-age=3600;
-            return 200 "OK from {{ .Hostname }}!!";
+            return 200 "OK from {{ .Hostname }}!! {{ .PlusBody }}";
         }
     }
 }

@@ -18,9 +18,12 @@ import (
 	testur "github.com/2manymws/rp/testutil"
 )
 
-func BenchmarkNGINXCache(b *testing.B) {
-	hostname := "a.example.com"
-	_ = testutil.NewUpstreamEchoNGINXServer(b, hostname)
+func BenchmarkNGINXCache1MBBody(b *testing.B) {
+	const (
+		hostname = "a.example.com"
+		bodySize = 1024 * 1024 // 'OK from {{ .Hostname }}!!' + 1MB
+	)
+	_ = testutil.NewUpstreamEchoNGINXServer(b, hostname, bodySize)
 	upstreams := map[string]string{}
 	upstreams[hostname] = fmt.Sprintf("http://%s:80", hostname)
 	proxy := testutil.NewReverseProxyNGINXServer(b, "r.example.com", upstreams)
@@ -56,9 +59,12 @@ func BenchmarkNGINXCache(b *testing.B) {
 	})
 }
 
-func BenchmarkDiscCache(b *testing.B) {
-	hostname := "a.example.com"
-	urlstr := testutil.NewUpstreamEchoNGINXServer(b, hostname)
+func BenchmarkDiscCache1MBBody(b *testing.B) {
+	const (
+		hostname = "a.example.com"
+		bodySize = 1024 * 1024 // 'OK from {{ .Hostname }}!!' + 1MB
+	)
+	urlstr := testutil.NewUpstreamEchoNGINXServer(b, hostname, bodySize)
 	upstreams := map[string]string{}
 	upstreams[hostname] = urlstr
 
@@ -102,7 +108,7 @@ func BenchmarkDiscCache(b *testing.B) {
 	})
 }
 
-func BenchmarkEncodeDecode1MB(b *testing.B) {
+func BenchmarkEncodeDecode1MBBody(b *testing.B) {
 	const bodySize = 1024 * 1024 // 1MB
 	var sb strings.Builder
 	sb.Grow(bodySize)

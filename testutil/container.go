@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/template"
 	"time"
@@ -54,13 +55,15 @@ func NewReverseProxyNGINXServer(t testing.TB, hostname string, upstreams map[str
 	return createNGINXServer(t, hostname, p)
 }
 
-func NewUpstreamEchoNGINXServer(t testing.TB, hostname string) string {
+func NewUpstreamEchoNGINXServer(t testing.TB, hostname string, bodySize int) string {
 	t.Helper()
 	dir := t.TempDir()
 	tb, err := conf.ReadFile("templates/nginx_echo.conf.tmpl")
 	if err != nil {
 		t.Fatal(err)
 	}
+	plusBody := strings.Repeat("a", bodySize)
+
 	tmpl := template.Must(template.New("conf").Parse(string(tb)))
 	p := filepath.Join(dir, fmt.Sprintf("%s.nginx_echo.conf", hostname))
 	f, err := os.Create(p)
@@ -69,6 +72,7 @@ func NewUpstreamEchoNGINXServer(t testing.TB, hostname string) string {
 	}
 	if err := tmpl.Execute(f, map[string]any{
 		"Hostname": hostname,
+		"PlusBody": plusBody,
 	}); err != nil {
 		t.Fatal(err)
 	}
