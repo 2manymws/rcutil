@@ -28,6 +28,9 @@ func WarmUpToCreateCache(t testing.TB, urlstr, hostname string, concurrency, cac
 			if err != nil {
 				return err
 			}
+			if res.StatusCode != http.StatusOK {
+				return fmt.Errorf("status code is not 200: %d", res.StatusCode)
+			}
 			return res.Body.Close()
 		})
 	}
