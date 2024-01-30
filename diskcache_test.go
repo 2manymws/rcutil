@@ -146,9 +146,12 @@ func TestDiskCacheWarmUp(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		if dc1.totalBytes == 0 {
+			t.Error("totalBytes > 0")
+		}
 		_, got, err := dc1.Load(key)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		defer got.Body.Close()
 		opts := []cmp.Option{
@@ -167,6 +170,9 @@ func TestDiskCacheWarmUp(t *testing.T) {
 		dc2, err := NewDiskCache(root, 24*time.Hour, DisableWarmUp())
 		if err != nil {
 			t.Fatal(err)
+		}
+		if dc2.totalBytes > 0 {
+			t.Error("totalBytes == 0")
 		}
 		if _, _, err := dc2.Load(key); err == nil {
 			t.Error("load should fail")
