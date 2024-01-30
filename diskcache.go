@@ -132,7 +132,11 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 		}()
 		_ = os.Remove(ci.path)
 		c.mu.Lock()
-		c.totalBytes -= ci.bytes
+		if c.totalBytes < ci.bytes {
+			c.totalBytes = 0
+		} else {
+			c.totalBytes -= ci.bytes
+		}
 		c.mu.Unlock()
 	})
 	if !c.disableAutoCleanup {
