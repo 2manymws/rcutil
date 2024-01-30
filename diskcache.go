@@ -132,12 +132,12 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 		}()
 		_ = os.Remove(ci.path)
 		c.mu.Lock()
+		defer c.mu.Unlock()
 		if c.totalBytes < ci.bytes {
 			c.totalBytes = 0
 		} else {
 			c.totalBytes -= ci.bytes
 		}
-		c.mu.Unlock()
 	})
 	if !c.disableAutoCleanup {
 		c.StartAutoCleanup()
@@ -161,9 +161,13 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 				return err
 			}
 			key := strings.ReplaceAll(rel, string(filepath.Separator), "")
+			size := uint64(fi.Size())
+			c.mu.Lock()
+			defer c.mu.Unlock()
+			c.totalBytes += size
 			c.m.Set(key, &cacheItem{
 				path:  path,
-				bytes: uint64(fi.Size()),
+				bytes: size,
 			}, ttlcache.DefaultTTL)
 			return nil
 		}); err != nil {
