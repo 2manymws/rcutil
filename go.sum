@@ -1,7 +1,7 @@
 github.com/2manymws/keyrwmutex v1.1.0 h1:bbLy7W+y0RboOTTxAtzP/0f29KKmso9ovKYw42aQomk=
 github.com/2manymws/keyrwmutex v1.1.0/go.mod h1:aT/Xb3zc1kZutxaX9+nsl85bhGqGD5px5Q6p3S9F0AI=
-github.com/2manymws/rc v0.9.1 h1:c680TRwD0U6D7MVNqjsabKMk5ZhervFv5oaHDidzZnU=
-github.com/2manymws/rc v0.9.1/go.mod h1:18sJ3Sj77Na6NbRKUjZ7aU80G0OsFEaEGLU0j9oHoAc=
+github.com/2manymws/rc v0.9.3 h1:2sqOCGb2iWWz8G2qsH0fNPL/77yG0aeH+72nLg69m/s=
+github.com/2manymws/rc v0.9.3/go.mod h1:18sJ3Sj77Na6NbRKUjZ7aU80G0OsFEaEGLU0j9oHoAc=
 github.com/2manymws/rp v0.8.3 h1:PpoYcPFdCfvOChabNvGp1ZWQCTZim55/UbIsAQErARE=
 github.com/2manymws/rp v0.8.3/go.mod h1:APD6xCbw5qb2zRghLs/MoPeikPbnNsy3ZTmehQOyczI=
 github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 h1:w+iIsaOQNcT7OZ575w+acHgRric5iCyQh+xv+KJ4HB8=
