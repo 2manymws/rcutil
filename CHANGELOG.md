@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.11.1](https://github.com/2manymws/rcutil/compare/v0.11.0...v0.11.1) - 2024-01-30
+### Fix bug 🐛
+- Fix total bytes negative overflow by @k1LoW in https://github.com/2manymws/rcutil/pull/44
+
 ## [v0.11.0](https://github.com/2manymws/rcutil/compare/v0.10.0...v0.11.0) - 2024-01-18
 ### Breaking Changes 🛠
 - Use gob instead of json for cache by @k1LoW in https://github.com/2manymws/rcutil/pull/41
