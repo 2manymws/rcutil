@@ -1,6 +1,7 @@
 package rcutil
 
 import (
+	"container/list"
 	"context"
 	"fmt"
 	"io/fs"
@@ -27,6 +28,58 @@ const (
 	DefaultCacheDirLen = 2
 )
 
+type deque struct {
+	mu  *keyrwmutex.KeyRWMutex
+	m   map[string]*list.Element
+	lru *list.List
+}
+
+func newDeque() *deque {
+	return &deque{
+		mu:  keyrwmutex.New(0),
+		m:   make(map[string]*list.Element),
+		lru: list.New(),
+	}
+}
+
+func (d *deque) pushFront(key string) {
+	d.mu.LockKey(key)
+	defer d.mu.UnlockKey(key)
+	if e, ok := d.m[key]; ok {
+		d.lru.MoveToFront(e)
+		return
+	}
+	e := d.lru.PushFront(key)
+	d.m[key] = e
+}
+
+func (d *deque) pushBack(key string) {
+	d.mu.LockKey(key)
+	defer d.mu.UnlockKey(key)
+	if e, ok := d.m[key]; ok {
+		d.lru.MoveToBack(e)
+		return
+	}
+	e := d.lru.PushBack(key)
+	d.m[key] = e
+}
+
+func (d *deque) back() string {
+	if d.lru.Len() == 0 {
+		return ""
+	}
+	return d.lru.Back().Value.(string)
+}
+
+func (d *deque) remove(key string) {
+	d.mu.LockKey(key)
+	defer d.mu.UnlockKey(key)
+	if e, ok := d.m[key]; ok {
+		d.lru.Remove(e)
+		delete(d.m, key)
+	}
+}
+
 // DiskCache is a disk cache implementation.
 type DiskCache struct {
 	cacheRoot          string
@@ -34,8 +87,10 @@ type DiskCache struct {
 	maxTotalBytes      uint64
 	disableAutoCleanup bool
 	disableWarmUp      bool
+	enableAutoAdjust   bool
 	enableTouchOnHit   bool
 	m                  *ttlcache.Cache[string, *cacheItem]
+	d                  *deque
 	totalBytes         uint64
 	cacheDirLen        int
 	mu                 sync.Mutex
@@ -70,6 +125,13 @@ func DisableAutoCleanup() DiskCacheOption {
 func DisableWarmUp() DiskCacheOption {
 	return func(c *DiskCache) {
 		c.disableWarmUp = true
+	}
+}
+
+// EnableAutoAdjust enables auto-adjustment to delete the oldest cache when the total cache size limit (maxTotalBytes) is reached.
+func EnableAutoAdjust() DiskCacheOption {
+	return func(c *DiskCache) {
+		c.enableAutoAdjust = true
 	}
 }
 
@@ -108,6 +170,7 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 		maxTotalBytes: NoLimitTotalBytes,
 		cacheDirLen:   DefaultCacheDirLen,
 		keyMu:         keyrwmutex.New(0),
+		d:             newDeque(),
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -122,12 +185,12 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	if !c.enableTouchOnHit {
 		mopts = append(mopts, ttlcache.WithDisableTouchOnHit[string, *cacheItem]())
 	}
-
 	c.m = ttlcache.New(mopts...)
 	c.m.OnEviction(func(ctx context.Context, r ttlcache.EvictionReason, i *ttlcache.Item[string, *cacheItem]) {
 		ci := i.Value()
 		c.keyMu.LockKey(ci.key)
 		defer func() {
+			c.d.remove(ci.key)
 			_ = c.keyMu.UnlockKey(ci.key)
 		}()
 		_ = os.Remove(ci.path)
@@ -224,16 +287,25 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 		path:  p,
 		bytes: wc.Bytes,
 	}
+
+	if c.maxTotalBytes != NoLimitTotalBytes {
+		for {
+			if c.totalBytes+wc.Bytes < c.maxTotalBytes {
+				break
+			}
+			// cache is full
+			if err := os.Remove(p); err != nil {
+				return err
+			}
+			return fmt.Errorf("%w (%d bytes >= %d bytes)", ErrCacheFull, c.totalBytes+wc.Bytes, c.maxTotalBytes)
+		}
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.maxTotalBytes != NoLimitTotalBytes && c.totalBytes+wc.Bytes >= c.maxTotalBytes {
-		if err := os.Remove(p); err != nil {
-			return err
-		}
-		return fmt.Errorf("%w (%d bytes >= %d bytes)", ErrCacheFull, c.totalBytes+wc.Bytes, c.maxTotalBytes)
-	}
 	c.m.Set(key, ci, ttl)
 	c.totalBytes += wc.Bytes
+	c.d.pushFront(key)
 	return nil
 }
 
@@ -253,7 +325,7 @@ func (c *DiskCache) Load(key string) (*http.Request, *http.Response, error) {
 	ci := i.Value()
 	f, err := os.Open(ci.path)
 	if err != nil {
-		c.m.Delete(key)
+		c.Delete(key)
 		return nil, nil, rc.ErrCacheNotFound
 	}
 	defer f.Close()
