@@ -1,6 +1,6 @@
 module github.com/2manymws/rcutil
 
-go 1.21.5
+go 1.21.7
 
 require (
 	github.com/2manymws/keyrwmutex v1.1.0

@@ -119,6 +119,30 @@ func TestDiskCacheMaxTotalBytes(t *testing.T) {
 	}
 }
 
+func TestAutoAdjust(t *testing.T) {
+	root := t.TempDir()
+	maxTotalBytes := uint64(209)
+	dc, err := NewDiskCache(root, 24*time.Hour, MaxTotalBytes(maxTotalBytes), EnableAutoAdjust())
+	if err != nil {
+		t.Fatal(err)
+	}
+	key1 := "test1"
+	key2 := "test2"
+	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
+	res := &http.Response{
+		Status:     http.StatusText(http.StatusOK),
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"X-Test": []string{"test"}},
+		Body:       newBody([]byte("hello")),
+	}
+	if err := dc.Store(key1, req, res); err != nil {
+		t.Fatal(err)
+	}
+	if err := dc.Store(key2, req, res); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestDiskCacheWarmUp(t *testing.T) {
 	root := t.TempDir()
 	key := "test"
