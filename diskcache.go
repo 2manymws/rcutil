@@ -293,6 +293,10 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 			if c.totalBytes+wc.Bytes < c.maxTotalBytes {
 				break
 			}
+			if c.enableAutoAdjust {
+				c.Delete(c.d.back())
+				continue
+			}
 			// cache is full
 			if err := os.Remove(p); err != nil {
 				return err
