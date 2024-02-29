@@ -44,23 +44,14 @@ func newDeque() *deque {
 
 func (d *deque) pushFront(key string) {
 	d.mu.LockKey(key)
-	defer d.mu.UnlockKey(key)
+	defer func() {
+		_ = d.mu.UnlockKey(key)
+	}()
 	if e, ok := d.m[key]; ok {
 		d.lru.MoveToFront(e)
 		return
 	}
 	e := d.lru.PushFront(key)
-	d.m[key] = e
-}
-
-func (d *deque) pushBack(key string) {
-	d.mu.LockKey(key)
-	defer d.mu.UnlockKey(key)
-	if e, ok := d.m[key]; ok {
-		d.lru.MoveToBack(e)
-		return
-	}
-	e := d.lru.PushBack(key)
 	d.m[key] = e
 }
 
@@ -73,7 +64,9 @@ func (d *deque) back() string {
 
 func (d *deque) remove(key string) {
 	d.mu.LockKey(key)
-	defer d.mu.UnlockKey(key)
+	defer func() {
+		_ = d.mu.UnlockKey(key)
+	}()
 	if e, ok := d.m[key]; ok {
 		d.lru.Remove(e)
 		delete(d.m, key)
