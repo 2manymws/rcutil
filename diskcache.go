@@ -29,24 +29,21 @@ const (
 )
 
 type deque struct {
-	mu  *keyrwmutex.KeyRWMutex
+	mu  sync.Mutex
 	m   map[string]*list.Element
 	lru *list.List
 }
 
 func newDeque() *deque {
 	return &deque{
-		mu:  keyrwmutex.New(0),
 		m:   make(map[string]*list.Element),
 		lru: list.New(),
 	}
 }
 
 func (d *deque) pushFront(key string) {
-	d.mu.LockKey(key)
-	defer func() {
-		_ = d.mu.UnlockKey(key)
-	}()
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	if e, ok := d.m[key]; ok {
 		d.lru.MoveToFront(e)
 		return
@@ -56,6 +53,8 @@ func (d *deque) pushFront(key string) {
 }
 
 func (d *deque) back() string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	if d.lru.Len() == 0 {
 		return ""
 	}
@@ -63,14 +62,14 @@ func (d *deque) back() string {
 }
 
 func (d *deque) remove(key string) {
-	d.mu.LockKey(key)
-	defer func() {
-		_ = d.mu.UnlockKey(key)
-	}()
-	if e, ok := d.m[key]; ok {
-		d.lru.Remove(e)
-		delete(d.m, key)
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	e, ok := d.m[key]
+	if !ok {
+		return
 	}
+	d.lru.Remove(e)
+	delete(d.m, key)
 }
 
 // DiskCache is a disk cache implementation.
@@ -181,19 +180,7 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	c.m = ttlcache.New(mopts...)
 	c.m.OnEviction(func(ctx context.Context, r ttlcache.EvictionReason, i *ttlcache.Item[string, *cacheItem]) {
 		ci := i.Value()
-		c.keyMu.LockKey(ci.key)
-		defer func() {
-			c.d.remove(ci.key)
-			_ = c.keyMu.UnlockKey(ci.key)
-		}()
-		_ = os.Remove(ci.path)
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		if c.totalBytes < ci.bytes {
-			c.totalBytes = 0
-		} else {
-			c.totalBytes -= ci.bytes
-		}
+		c.removeCache(ci)
 	})
 	if !c.disableAutoCleanup {
 		c.StartAutoCleanup()
@@ -283,11 +270,19 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 
 	if c.maxTotalBytes != NoLimitTotalBytes {
 		for {
+			c.mu.Lock()
 			if c.totalBytes+wc.Bytes < c.maxTotalBytes {
+				c.mu.Unlock()
 				break
 			}
+			c.mu.Unlock()
 			if c.enableAutoAdjust {
-				c.Delete(c.d.back())
+				key := c.d.back()
+				i := c.m.Get(key)
+				ci := i.Value()
+				c.removeCache(ci)
+				c.Delete(key)
+				time.Sleep(1 * time.Millisecond)
 				continue
 			}
 			// cache is full
@@ -347,6 +342,20 @@ func (c *DiskCache) Metrics() Metrics {
 		Metrics:    m,
 		TotalBytes: c.totalBytes,
 		KeyCount:   uint64(len(c.m.Keys())),
+	}
+}
+
+func (c *DiskCache) removeCache(ci *cacheItem) {
+	defer func() {
+		c.d.remove(ci.key)
+	}()
+	_ = os.Remove(ci.path)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.totalBytes < ci.bytes {
+		c.totalBytes = 0
+	} else {
+		c.totalBytes -= ci.bytes
 	}
 }
 
