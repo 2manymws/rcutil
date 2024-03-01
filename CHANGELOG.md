@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.12.1](https://github.com/2manymws/rcutil/compare/v0.12.0...v0.12.1) - 2024-03-01
+### Fix bug 🐛
+- Fix auto adjust by @k1LoW in https://github.com/2manymws/rcutil/pull/49
+
 ## [v0.12.0](https://github.com/2manymws/rcutil/compare/v0.11.1...v0.12.0) - 2024-02-29
 ### New Features 🎉
 - Add EnableAutoAdjust() to enable auto-adjusting the cache size by @k1LoW in https://github.com/2manymws/rcutil/pull/48
