@@ -7,7 +7,7 @@ require (
 	github.com/2manymws/rc v0.9.3
 	github.com/2manymws/rp v0.8.3
 	github.com/google/go-cmp v0.6.0
-	github.com/jellydator/ttlcache/v3 v3.1.0
+	github.com/jellydator/ttlcache/v3 v3.2.0
 	github.com/ory/dockertest/v3 v3.10.0
 	golang.org/x/sync v0.1.0
 )

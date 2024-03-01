@@ -11,6 +11,7 @@ import (
 	"github.com/2manymws/rc"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"golang.org/x/sync/errgroup"
 )
 
 func TestDiskCacheTTL(t *testing.T) {
@@ -120,26 +121,49 @@ func TestDiskCacheMaxTotalBytes(t *testing.T) {
 }
 
 func TestAutoAdjust(t *testing.T) {
-	root := t.TempDir()
-	maxTotalBytes := uint64(209)
-	dc, err := NewDiskCache(root, 24*time.Hour, MaxTotalBytes(maxTotalBytes), EnableAutoAdjust())
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name             string
+		enableAutoAdjust bool
+		wantErr          bool
+	}{
+		{"diable auto adjust", false, true},
+		{"enable auto adjust", true, false},
 	}
-	key1 := "test1"
-	key2 := "test2"
-	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
-	res := &http.Response{
-		Status:     http.StatusText(http.StatusOK),
-		StatusCode: http.StatusOK,
-		Header:     http.Header{"X-Test": []string{"test"}},
-		Body:       newBody([]byte("hello")),
-	}
-	if err := dc.Store(key1, req, res); err != nil {
-		t.Fatal(err)
-	}
-	if err := dc.Store(key2, req, res); err != nil {
-		t.Error(err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			maxTotalBytes := uint64(1000)
+			opts := []DiskCacheOption{
+				MaxTotalBytes(maxTotalBytes),
+			}
+			if tt.enableAutoAdjust {
+				opts = append(opts, EnableAutoAdjust())
+			}
+			dc, err := NewDiskCache(root, 24*time.Hour, opts...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			eg := new(errgroup.Group)
+			for i := 0; i < 100; i++ {
+				key := fmt.Sprintf("test%d", i)
+				eg.Go(func() error {
+					req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
+					res := &http.Response{
+						Status:     http.StatusText(http.StatusOK),
+						StatusCode: http.StatusOK,
+						Header:     http.Header{"X-Test": []string{"test"}},
+						Body:       newBody([]byte("hello")),
+					}
+					return dc.Store(key, req, res)
+				})
+			}
+			if err := eg.Wait(); (err != nil) != tt.wantErr {
+				t.Error(err)
+			}
+			if dc.maxTotalBytes > maxTotalBytes {
+				t.Errorf("maxTotalBytes: got %d, want %d", dc.maxTotalBytes, maxTotalBytes)
+			}
+		})
 	}
 }
 
