@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.12.0](https://github.com/2manymws/rcutil/compare/v0.11.1...v0.12.0) - 2024-02-29
+### New Features 🎉
+- Add EnableAutoAdjust() to enable auto-adjusting the cache size by @k1LoW in https://github.com/2manymws/rcutil/pull/48
+### Other Changes
+- Bump github.com/opencontainers/runc from 1.1.5 to 1.1.12 by @dependabot in https://github.com/2manymws/rcutil/pull/46
+
 ## [v0.11.1](https://github.com/2manymws/rcutil/compare/v0.11.0...v0.11.1) - 2024-01-30
 ### Fix bug 🐛
 - Fix total bytes negative overflow by @k1LoW in https://github.com/2manymws/rcutil/pull/44
