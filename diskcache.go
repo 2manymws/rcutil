@@ -290,6 +290,9 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 			if c.enableAutoAdjust {
 				key := c.d.back()
 				i := c.m.Get(key)
+				if i == nil {
+					continue
+				}
 				ci := i.Value()
 				c.removeCache(ci)
 				c.Delete(key)
