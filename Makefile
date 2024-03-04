@@ -8,6 +8,7 @@ test:
 	go test ./... -coverprofile=coverage.out -covermode=count
 	cat coverage.out | grep -v "testutil" > coverage.filtered.out
 	mv coverage.filtered.out coverage.out
+	go test ./... -race
 
 benchmark:
 	go test -bench . -benchmem -benchtime 1000x | octocov-go-test-bench --tee > custom_metrics_benchmark.json
