@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.13.0](https://github.com/2manymws/rcutil/compare/v0.12.1...v0.13.0) - 2024-03-04
+### Breaking Changes 🛠
+- Change DiskCacheOption signature by @k1LoW in https://github.com/2manymws/rcutil/pull/51
+### Fix bug 🐛
+- Fix nil pointer dereference in diskcache.go by @k1LoW in https://github.com/2manymws/rcutil/pull/53
+### Other Changes
+- Add the option to specify a percentage of the total size to adjust the total size of cache files. by @k1LoW in https://github.com/2manymws/rcutil/pull/54
+
 ## [v0.12.1](https://github.com/2manymws/rcutil/compare/v0.12.0...v0.12.1) - 2024-03-01
 ### Fix bug 🐛
 - Fix auto adjust by @k1LoW in https://github.com/2manymws/rcutil/pull/49
