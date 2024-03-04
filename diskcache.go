@@ -387,9 +387,12 @@ func (c *DiskCache) removeCachesUntilAdjustTotalBytes() {
 		c.removeCache(ci)
 		c.Delete(key)
 		time.Sleep(1 * time.Millisecond)
+		c.mu.Lock()
 		if c.totalBytes < c.adjustTotalBytes {
+			c.mu.Unlock()
 			return
 		}
+		c.mu.Unlock()
 	}
 }
 
