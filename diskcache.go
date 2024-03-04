@@ -90,47 +90,53 @@ type DiskCache struct {
 }
 
 // DiskCacheOption is an option for DiskCache.
-type DiskCacheOption func(*DiskCache)
+type DiskCacheOption func(*DiskCache) error
 
 // MaxKeys sets the maximum number of keys that can be stored in the cache.
 func MaxKeys(n uint64) DiskCacheOption {
-	return func(c *DiskCache) {
+	return func(c *DiskCache) error {
 		c.maxKeys = n
+		return nil
 	}
 }
 
 // MaxTotalBytes sets the maximum number of bytes that can be stored in the cache.
 func MaxTotalBytes(n uint64) DiskCacheOption {
-	return func(c *DiskCache) {
+	return func(c *DiskCache) error {
 		c.maxTotalBytes = n
+		return nil
 	}
 }
 
 // DisableAutoCleanup disables the automatic cache cleanup.
 func DisableAutoCleanup() DiskCacheOption {
-	return func(c *DiskCache) {
+	return func(c *DiskCache) error {
 		c.disableAutoCleanup = true
+		return nil
 	}
 }
 
 // DisableWarmUp disables the automatic cache warm up.
 func DisableWarmUp() DiskCacheOption {
-	return func(c *DiskCache) {
+	return func(c *DiskCache) error {
 		c.disableWarmUp = true
+		return nil
 	}
 }
 
 // EnableAutoAdjust enables auto-adjustment to delete the oldest cache when the total cache size limit (maxTotalBytes) is reached.
 func EnableAutoAdjust() DiskCacheOption {
-	return func(c *DiskCache) {
+	return func(c *DiskCache) error {
 		c.enableAutoAdjust = true
+		return nil
 	}
 }
 
 // EnableTouchOnHit enables the touch on hit feature.
 func EnableTouchOnHit() DiskCacheOption {
-	return func(c *DiskCache) {
+	return func(c *DiskCache) error {
 		c.enableTouchOnHit = true
+		return nil
 	}
 }
 
@@ -165,7 +171,9 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 		d:             newDeque(),
 	}
 	for _, opt := range opts {
-		opt(c)
+		if err := opt(c); err != nil {
+			return nil, err
+		}
 	}
 
 	mopts := []ttlcache.Option[string, *cacheItem]{
