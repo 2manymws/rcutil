@@ -26,6 +26,8 @@ const (
 	NoLimitTTL = ttlcache.NoTTL
 	// DefaultCacheDirLen is the default length of the cache directory name.
 	DefaultCacheDirLen = 2
+
+	defaultAdjustPercentage = 80
 )
 
 type deque struct {
@@ -80,6 +82,7 @@ type DiskCache struct {
 	disableAutoCleanup bool
 	disableWarmUp      bool
 	enableAutoAdjust   bool
+	adjustTotalBytes   uint64
 	enableTouchOnHit   bool
 	m                  *ttlcache.Cache[string, *cacheItem]
 	d                  *deque
@@ -87,6 +90,7 @@ type DiskCache struct {
 	cacheDirLen        int
 	mu                 sync.Mutex
 	keyMu              *keyrwmutex.KeyRWMutex
+	adjustMu           sync.Mutex
 }
 
 // DiskCacheOption is an option for DiskCache.
@@ -131,6 +135,23 @@ func EnableAutoAdjust() DiskCacheOption {
 			return fmt.Errorf("maxTotalBytes must be set to enable auto-adjust")
 		}
 		c.enableAutoAdjust = true
+		c.adjustTotalBytes = c.maxTotalBytes * defaultAdjustPercentage / 100
+		return nil
+	}
+}
+
+// EnableAutoAdjustWithPercentage enables auto-adjustment to delete the oldest cache when the total cache size limit (maxTotalBytes) is reached.
+// percentage: Delete until what percentage of the total byte size is reached.
+func EnableAutoAdjustWithPercentage(percentage uint64) DiskCacheOption {
+	return func(c *DiskCache) error {
+		if c.maxTotalBytes == NoLimitTotalBytes {
+			return fmt.Errorf("maxTotalBytes must be set to enable auto-adjust")
+		}
+		if percentage > 100 {
+			return fmt.Errorf("percentage must be less than or equal to 100")
+		}
+		c.enableAutoAdjust = true
+		c.adjustTotalBytes = c.maxTotalBytes * percentage / 100
 		return nil
 	}
 }
@@ -288,16 +309,8 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 			}
 			c.mu.Unlock()
 			if c.enableAutoAdjust {
-				key := c.d.back()
-				i := c.m.Get(key)
-				if i == nil {
-					continue
-				}
-				ci := i.Value()
-				c.removeCache(ci)
-				c.Delete(key)
-				time.Sleep(1 * time.Millisecond)
-				continue
+				go c.removeCachesUntilAdjustTotalBytes()
+				break
 			}
 			// cache is full
 			if err := os.Remove(p); err != nil {
@@ -356,6 +369,27 @@ func (c *DiskCache) Metrics() Metrics {
 		Metrics:    m,
 		TotalBytes: c.totalBytes,
 		KeyCount:   uint64(len(c.m.Keys())),
+	}
+}
+
+func (c *DiskCache) removeCachesUntilAdjustTotalBytes() {
+	if !c.adjustMu.TryLock() {
+		return
+	}
+	defer c.adjustMu.Unlock()
+	for {
+		key := c.d.back()
+		i := c.m.Get(key)
+		if i == nil {
+			continue
+		}
+		ci := i.Value()
+		c.removeCache(ci)
+		c.Delete(key)
+		time.Sleep(1 * time.Millisecond)
+		if c.totalBytes < c.adjustTotalBytes {
+			return
+		}
 	}
 }
 
