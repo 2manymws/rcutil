@@ -127,6 +127,9 @@ func DisableWarmUp() DiskCacheOption {
 // EnableAutoAdjust enables auto-adjustment to delete the oldest cache when the total cache size limit (maxTotalBytes) is reached.
 func EnableAutoAdjust() DiskCacheOption {
 	return func(c *DiskCache) error {
+		if c.maxTotalBytes == NoLimitTotalBytes {
+			return fmt.Errorf("maxTotalBytes must be set to enable auto-adjust")
+		}
 		c.enableAutoAdjust = true
 		return nil
 	}
