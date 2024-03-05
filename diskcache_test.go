@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -16,8 +18,12 @@ import (
 
 func TestDiskCacheTTL(t *testing.T) {
 	root := t.TempDir()
+	cacheRoot := filepath.Join(root, "cache")
+	if err := os.MkdirAll(cacheRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
 	ttl := 100 * time.Millisecond
-	dc, err := NewDiskCache(root, ttl)
+	dc, err := NewDiskCache(cacheRoot, ttl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,8 +66,12 @@ func TestDiskCacheTTL(t *testing.T) {
 
 func TestDiskCacheMaxKeys(t *testing.T) {
 	root := t.TempDir()
+	cacheRoot := filepath.Join(root, "cache")
+	if err := os.MkdirAll(cacheRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
 	maxKeys := uint64(1)
-	dc, err := NewDiskCache(root, 24*time.Hour, MaxKeys(maxKeys))
+	dc, err := NewDiskCache(cacheRoot, 24*time.Hour, MaxKeys(maxKeys))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,8 +109,12 @@ func TestDiskCacheMaxKeys(t *testing.T) {
 
 func TestDiskCacheMaxTotalBytes(t *testing.T) {
 	root := t.TempDir()
+	cacheRoot := filepath.Join(root, "cache")
+	if err := os.MkdirAll(cacheRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
 	maxTotalBytes := uint64(209)
-	dc, err := NewDiskCache(root, 24*time.Hour, MaxTotalBytes(maxTotalBytes))
+	dc, err := NewDiskCache(cacheRoot, 24*time.Hour, MaxTotalBytes(maxTotalBytes))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,12 +208,19 @@ func TestDiskCacheWarmUp(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		time.Sleep(10 * time.Millisecond)
+
+		dc1.mu.Lock()
 		if dc1.totalBytes == 0 {
+			dc1.mu.Unlock()
 			t.Error("totalBytes > 0")
+			return
 		}
+		dc1.mu.Unlock()
 		_, got, err := dc1.Load(key)
 		if err != nil {
 			t.Error(err)
+			return
 		}
 		defer got.Body.Close()
 		opts := []cmp.Option{
@@ -219,6 +240,7 @@ func TestDiskCacheWarmUp(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if dc2.totalBytes > 0 {
 			t.Error("totalBytes == 0")
 		}

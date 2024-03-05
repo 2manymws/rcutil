@@ -137,6 +137,11 @@ func KeyToPath(key string, n int) string {
 	return result.String()
 }
 
+// PathToKey converts path to key
+func PathToKey(path string) string {
+	return strings.ReplaceAll(path, string(filepath.Separator), "")
+}
+
 // WriteCounter counts bytes written.
 type WriteCounter struct {
 	io.Writer

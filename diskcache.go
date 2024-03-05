@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -92,6 +91,7 @@ type DiskCache struct {
 	keyMu              *keyrwmutex.KeyRWMutex
 	adjustMu           sync.Mutex
 	adjustStopCh       chan struct{}
+	warmUpStopCh       chan struct{}
 }
 
 // DiskCacheOption is an option for DiskCache.
@@ -220,35 +220,9 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	}
 
 	if !c.disableWarmUp {
-		// Warm up the cache
-		if err := filepath.WalkDir(cacheRoot, func(path string, info fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				return nil
-			}
-			rel, err := filepath.Rel(cacheRoot, path)
-			if err != nil {
-				return err
-			}
-			fi, err := info.Info()
-			if err != nil {
-				return err
-			}
-			key := strings.ReplaceAll(rel, string(filepath.Separator), "")
-			size := uint64(fi.Size())
-			c.mu.Lock()
-			defer c.mu.Unlock()
-			c.totalBytes += size
-			c.m.Set(key, &cacheItem{
-				path:  path,
-				bytes: size,
-			}, ttlcache.DefaultTTL)
-			return nil
-		}); err != nil {
-			return nil, err
-		}
+		go func() {
+			_ = c.warmUpCaches()
+		}()
 	}
 
 	return c, nil
@@ -256,6 +230,7 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 
 // StopAll stops all the goroutines of the cache.
 func (c *DiskCache) StopAll() {
+	c.StopWarmUp()
 	c.StartAutoCleanup()
 	c.StopAdjust()
 }
@@ -273,6 +248,11 @@ func (c *DiskCache) StopAutoCleanup() {
 // StopAdjust
 func (c *DiskCache) StopAdjust() {
 	c.adjustStopCh <- struct{}{}
+}
+
+// StopWarmUp stops the warm up cache.
+func (c *DiskCache) StopWarmUp() {
+	c.warmUpStopCh <- struct{}{}
 }
 
 // DeleteExpired deletes expired caches.
@@ -315,11 +295,11 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 	if c.maxTotalBytes != NoLimitTotalBytes {
 		for {
 			c.mu.Lock()
-			if c.totalBytes+wc.Bytes < c.maxTotalBytes {
-				c.mu.Unlock()
+			current := c.totalBytes + wc.Bytes
+			c.mu.Unlock()
+			if current < c.maxTotalBytes {
 				break
 			}
-			c.mu.Unlock()
 			if c.enableAutoAdjust {
 				go c.removeCachesUntilAdjustTotalBytes()
 				break
@@ -328,7 +308,7 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 			if err := os.Remove(p); err != nil {
 				return err
 			}
-			return fmt.Errorf("%w (%d bytes >= %d bytes)", ErrCacheFull, c.totalBytes+wc.Bytes, c.maxTotalBytes)
+			return fmt.Errorf("%w (%d bytes >= %d bytes)", ErrCacheFull, current, c.maxTotalBytes)
 		}
 	}
 
@@ -382,6 +362,41 @@ func (c *DiskCache) Metrics() Metrics {
 		TotalBytes: c.totalBytes,
 		KeyCount:   uint64(len(c.m.Keys())),
 	}
+}
+
+// warmUpCaches warm up the cache
+func (c *DiskCache) warmUpCaches() error {
+	return filepath.WalkDir(c.cacheRoot, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(c.cacheRoot, path)
+		if err != nil {
+			return err
+		}
+		fi, err := info.Info()
+		if err != nil {
+			return err
+		}
+		key := PathToKey(rel)
+		size := uint64(fi.Size())
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		c.totalBytes += size
+		c.m.Set(key, &cacheItem{
+			path:  path,
+			bytes: size,
+		}, ttlcache.DefaultTTL)
+		select {
+		case <-c.warmUpStopCh:
+			return filepath.SkipAll
+		default:
+		}
+		return nil
+	})
 }
 
 func (c *DiskCache) removeCachesUntilAdjustTotalBytes() {
