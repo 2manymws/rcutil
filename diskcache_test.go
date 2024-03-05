@@ -114,10 +114,11 @@ func TestDiskCacheMaxTotalBytes(t *testing.T) {
 		t.Fatal(err)
 	}
 	maxTotalBytes := uint64(209)
-	dc, err := NewDiskCache(cacheRoot, 24*time.Hour, MaxTotalBytes(maxTotalBytes))
+	dc, err := NewDiskCache(cacheRoot, 24*time.Hour, MaxTotalBytes(maxTotalBytes), DisableWarmUp())
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	key := "test1"
 	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
 	res := &http.Response{
@@ -208,7 +209,16 @@ func TestDiskCacheWarmUp(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(10 * time.Millisecond)
+		// wait warm up
+		for i := 0; i < 100; i++ {
+			dc1.mu.Lock()
+			if dc1.totalBytes > 0 {
+				dc1.mu.Unlock()
+				break
+			}
+			dc1.mu.Unlock()
+			time.Sleep(10 * time.Millisecond)
+		}
 
 		dc1.mu.Lock()
 		if dc1.totalBytes == 0 {
