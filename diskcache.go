@@ -91,6 +91,7 @@ type DiskCache struct {
 	mu                 sync.Mutex
 	keyMu              *keyrwmutex.KeyRWMutex
 	adjustMu           sync.Mutex
+	adjustStopCh       chan struct{}
 }
 
 // DiskCacheOption is an option for DiskCache.
@@ -253,6 +254,12 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	return c, nil
 }
 
+// StopAll stops all the goroutines of the cache.
+func (c *DiskCache) StopAll() {
+	c.StartAutoCleanup()
+	c.StopAdjust()
+}
+
 // StartAutoCleanup starts the goroutine of automatic cache cleanup
 func (c *DiskCache) StartAutoCleanup() {
 	go c.m.Start()
@@ -261,6 +268,11 @@ func (c *DiskCache) StartAutoCleanup() {
 // StopAutoCleanup stops the auto cleanup cache.
 func (c *DiskCache) StopAutoCleanup() {
 	c.m.Stop()
+}
+
+// StopAdjust
+func (c *DiskCache) StopAdjust() {
+	c.adjustStopCh <- struct{}{}
 }
 
 // DeleteExpired deletes expired caches.
@@ -393,6 +405,11 @@ func (c *DiskCache) removeCachesUntilAdjustTotalBytes() {
 			return
 		}
 		c.mu.Unlock()
+		select {
+		case <-c.adjustStopCh:
+			return
+		default:
+		}
 	}
 }
 
