@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.14.1](https://github.com/2manymws/rcutil/compare/v0.14.0...v0.14.1) - 2024-03-06
+### Fix bug 🐛
+- Fix problem of blocking due to ch when StopAll is called. by @k1LoW in https://github.com/2manymws/rcutil/pull/58
+
 ## [v0.14.0](https://github.com/2manymws/rcutil/compare/v0.13.0...v0.14.0) - 2024-03-05
 ### Breaking Changes 🛠
 - Asynchronous cache warming by @k1LoW in https://github.com/2manymws/rcutil/pull/56
