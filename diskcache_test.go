@@ -139,10 +139,12 @@ func TestAutoAdjust(t *testing.T) {
 	tests := []struct {
 		name             string
 		enableAutoAdjust bool
+		stopAdjust       bool
 		wantErr          bool
 	}{
-		{"diable auto adjust", false, true},
-		{"enable auto adjust", true, false},
+		{"diable auto adjust", false, false, true},
+		{"enable auto adjust", true, false, false},
+		{"enable auto adjust and call StopAdjust", true, true, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -157,6 +159,9 @@ func TestAutoAdjust(t *testing.T) {
 			dc, err := NewDiskCache(root, 24*time.Hour, opts...)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if tt.stopAdjust {
+				dc.StopAdjust()
 			}
 			eg := new(errgroup.Group)
 			for i := 0; i < 100; i++ {
@@ -258,4 +263,17 @@ func TestDiskCacheWarmUp(t *testing.T) {
 			t.Error("load should fail")
 		}
 	})
+}
+
+func TestDiskCacheStopAll(t *testing.T) {
+	root := t.TempDir()
+	cacheRoot := filepath.Join(root, "cache")
+	if err := os.MkdirAll(cacheRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+	dc, err := NewDiskCache(cacheRoot, 24*time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dc.StopAll()
 }

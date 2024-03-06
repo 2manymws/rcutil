@@ -75,23 +75,25 @@ func (d *deque) remove(key string) {
 
 // DiskCache is a disk cache implementation.
 type DiskCache struct {
-	cacheRoot          string
-	maxKeys            uint64
-	maxTotalBytes      uint64
-	disableAutoCleanup bool
-	disableWarmUp      bool
-	enableAutoAdjust   bool
-	adjustTotalBytes   uint64
-	enableTouchOnHit   bool
-	m                  *ttlcache.Cache[string, *cacheItem]
-	d                  *deque
-	totalBytes         uint64
-	cacheDirLen        int
-	mu                 sync.Mutex
-	keyMu              *keyrwmutex.KeyRWMutex
-	adjustMu           sync.Mutex
-	adjustStopCh       chan struct{}
-	warmUpStopCh       chan struct{}
+	cacheRoot            string
+	maxKeys              uint64
+	maxTotalBytes        uint64
+	disableAutoCleanup   bool
+	disableWarmUp        bool
+	enableAutoAdjust     bool
+	adjustTotalBytes     uint64
+	enableTouchOnHit     bool
+	m                    *ttlcache.Cache[string, *cacheItem]
+	d                    *deque
+	totalBytes           uint64
+	cacheDirLen          int
+	mu                   sync.Mutex
+	keyMu                *keyrwmutex.KeyRWMutex
+	adjustMu             sync.Mutex
+	adjustStopCtx        context.Context
+	adjustStopCancelFunc context.CancelFunc
+	warmUpStopCtx        context.Context
+	warmUpStopCancelFunc context.CancelFunc
 }
 
 // DiskCacheOption is an option for DiskCache.
@@ -187,13 +189,20 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	if ok, err := isWritable(cacheRoot); !ok {
 		return nil, fmt.Errorf("cache root %q is not writable: %w", cacheRoot, err)
 	}
+	adjustStopCtx, adjustStopCancelFunc := context.WithCancel(context.Background())
+	warmUpStopCtx, warmUpStopCancelFunc := context.WithCancel(context.Background())
+
 	c := &DiskCache{
-		cacheRoot:     cacheRoot,
-		maxKeys:       NoLimitKeys,
-		maxTotalBytes: NoLimitTotalBytes,
-		cacheDirLen:   DefaultCacheDirLen,
-		keyMu:         keyrwmutex.New(0),
-		d:             newDeque(),
+		cacheRoot:            cacheRoot,
+		maxKeys:              NoLimitKeys,
+		maxTotalBytes:        NoLimitTotalBytes,
+		cacheDirLen:          DefaultCacheDirLen,
+		keyMu:                keyrwmutex.New(0),
+		d:                    newDeque(),
+		adjustStopCtx:        adjustStopCtx,
+		adjustStopCancelFunc: adjustStopCancelFunc,
+		warmUpStopCtx:        warmUpStopCtx,
+		warmUpStopCancelFunc: warmUpStopCancelFunc,
 	}
 	for _, opt := range opts {
 		if err := opt(c); err != nil {
@@ -247,12 +256,12 @@ func (c *DiskCache) StopAutoCleanup() {
 
 // StopAdjust
 func (c *DiskCache) StopAdjust() {
-	c.adjustStopCh <- struct{}{}
+	c.adjustStopCancelFunc()
 }
 
 // StopWarmUp stops the warm up cache.
 func (c *DiskCache) StopWarmUp() {
-	c.warmUpStopCh <- struct{}{}
+	c.warmUpStopCancelFunc()
 }
 
 // DeleteExpired deletes expired caches.
@@ -299,7 +308,16 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 		switch {
 		case current < c.maxTotalBytes:
 		case c.enableAutoAdjust:
-			go c.removeCachesUntilAdjustTotalBytes()
+			select {
+			case <-c.adjustStopCtx.Done():
+				// cache is full
+				if err := os.Remove(p); err != nil {
+					return err
+				}
+				return fmt.Errorf("%w (%d bytes >= %d bytes)", ErrCacheFull, current, c.maxTotalBytes)
+			default:
+				go c.removeCachesUntilAdjustTotalBytes()
+			}
 		default:
 			// cache is full
 			if err := os.Remove(p); err != nil {
@@ -388,7 +406,7 @@ func (c *DiskCache) warmUpCaches() error {
 			bytes: size,
 		}, ttlcache.DefaultTTL)
 		select {
-		case <-c.warmUpStopCh:
+		case <-c.warmUpStopCtx.Done():
 			return filepath.SkipAll
 		default:
 		}
@@ -402,6 +420,11 @@ func (c *DiskCache) removeCachesUntilAdjustTotalBytes() {
 	}
 	defer c.adjustMu.Unlock()
 	for {
+		select {
+		case <-c.adjustStopCtx.Done():
+			return
+		default:
+		}
 		key := c.d.back()
 		i := c.m.Get(key)
 		if i == nil {
@@ -417,11 +440,6 @@ func (c *DiskCache) removeCachesUntilAdjustTotalBytes() {
 			return
 		}
 		c.mu.Unlock()
-		select {
-		case <-c.adjustStopCh:
-			return
-		default:
-		}
 	}
 }
 
