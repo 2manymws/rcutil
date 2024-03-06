@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.14.0](https://github.com/2manymws/rcutil/compare/v0.13.0...v0.14.0) - 2024-03-05
+### Breaking Changes 🛠
+- Asynchronous cache warming by @k1LoW in https://github.com/2manymws/rcutil/pull/56
+### Other Changes
+- Add StopAdjust and StopAll by @k1LoW in https://github.com/2manymws/rcutil/pull/55
+
 ## [v0.13.0](https://github.com/2manymws/rcutil/compare/v0.12.1...v0.13.0) - 2024-03-04
 ### Breaking Changes 🛠
 - Change DiskCacheOption signature by @k1LoW in https://github.com/2manymws/rcutil/pull/51
