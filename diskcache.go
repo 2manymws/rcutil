@@ -3,17 +3,21 @@ package rcutil
 import (
 	"container/list"
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/2manymws/keyrwmutex"
 	"github.com/2manymws/rc"
 	"github.com/jellydator/ttlcache/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -27,6 +31,9 @@ const (
 	DefaultCacheDirLen = 2
 
 	defaultAdjustPercentage = 80
+
+	reqCacheSuffix = ".request"
+	resCacheSuffix = ".response"
 )
 
 type deque struct {
@@ -175,9 +182,9 @@ type Metrics struct {
 }
 
 type cacheItem struct {
-	key   string
-	path  string
-	bytes uint64
+	key     string
+	pathkey string
+	bytes   uint64
 }
 
 // NewDiskCache returns a new DiskCache.
@@ -286,24 +293,50 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	f, err := os.Create(p)
-	if err != nil {
+	eg := &errgroup.Group{}
+	wb := atomic.Uint64{}
+	eg.Go(func() error {
+		// Store request
+		f, err := os.Create(p + reqCacheSuffix)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		wc := &WriteCounter{Writer: f}
+		if err := EncodeReq(req, wc); err != nil {
+			return err
+		}
+		wb.Add(wc.Bytes)
+		return nil
+	})
+	eg.Go(func() error {
+		// Store response
+		f, err := os.Create(p + resCacheSuffix)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		wc := &WriteCounter{Writer: f}
+		if err := EncodeRes(res, wc); err != nil {
+			return err
+		}
+		wb.Add(wc.Bytes)
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
 		return err
 	}
-	wc := &WriteCounter{Writer: f}
-	defer f.Close()
-	if err := EncodeReqRes(req, res, wc); err != nil {
-		return err
-	}
+
 	ci := &cacheItem{
-		key:   key,
-		path:  p,
-		bytes: wc.Bytes,
+		key:     key,
+		pathkey: p,
+		bytes:   wb.Load(),
 	}
 
 	if c.maxTotalBytes != NoLimitTotalBytes {
 		c.mu.Lock()
-		current := c.totalBytes + wc.Bytes
+		current := c.totalBytes + wb.Load()
 		c.mu.Unlock()
 		switch {
 		case current < c.maxTotalBytes:
@@ -311,7 +344,10 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 			select {
 			case <-c.adjustStopCtx.Done():
 				// cache is full
-				if err := os.Remove(p); err != nil {
+				if err := os.Remove(p + reqCacheSuffix); err != nil {
+					return err
+				}
+				if err := os.Remove(p + resCacheSuffix); err != nil {
 					return err
 				}
 				return fmt.Errorf("%w (%d bytes >= %d bytes)", ErrCacheFull, current, c.maxTotalBytes)
@@ -320,7 +356,10 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 			}
 		default:
 			// cache is full
-			if err := os.Remove(p); err != nil {
+			if err := os.Remove(p + reqCacheSuffix); err != nil {
+				return err
+			}
+			if err := os.Remove(p + resCacheSuffix); err != nil {
 				return err
 			}
 			return fmt.Errorf("%w (%d bytes >= %d bytes)", ErrCacheFull, current, c.maxTotalBytes)
@@ -330,7 +369,7 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.m.Set(key, ci, ttl)
-	c.totalBytes += wc.Bytes
+	c.totalBytes += wb.Load()
 	c.d.pushFront(key)
 	return nil
 }
@@ -349,16 +388,49 @@ func (c *DiskCache) Load(key string) (*http.Request, *http.Response, error) {
 		return nil, nil, rc.ErrCacheExpired
 	}
 	ci := i.Value()
-	f, err := os.Open(ci.path)
-	if err != nil {
+
+	var (
+		req *http.Request
+		res *http.Response
+	)
+	eg := &errgroup.Group{}
+	eg.Go(func() error {
+		f, err := os.Open(ci.pathkey + reqCacheSuffix)
+		if err != nil {
+			return err
+		}
+		// Do not defer f.Close()
+		req, err = DecodeReq(f)
+		if err != nil {
+			return errors.Join(err, f.Close())
+		}
+		return nil
+	})
+
+	eg.Go(func() error {
+		f, err := os.Open(ci.pathkey + resCacheSuffix)
+		if err != nil {
+			return err
+		}
+		// Do not defer f.Close()
+		res, err = DecodeRes(f)
+		if err != nil {
+			return errors.Join(err, f.Close())
+		}
+		return nil
+	})
+
+	if err := eg.Wait(); err != nil {
 		c.Delete(key)
-		return nil, nil, rc.ErrCacheNotFound
+		if res != nil {
+			err = errors.Join(err, res.Body.Close())
+		}
+		if req != nil {
+			err = errors.Join(err, req.Body.Close())
+		}
+		return nil, nil, errors.Join(err, rc.ErrCacheNotFound)
 	}
-	defer f.Close()
-	req, res, err := DecodeReqRes(f)
-	if err != nil {
-		return nil, nil, err
-	}
+
 	return req, res, nil
 }
 
@@ -388,22 +460,35 @@ func (c *DiskCache) warmUpCaches() error {
 		if info.IsDir() {
 			return nil
 		}
+		if !strings.HasSuffix(path, resCacheSuffix) {
+			return nil
+		}
+		// Use response cache to warm up
 		rel, err := filepath.Rel(c.cacheRoot, path)
 		if err != nil {
 			return err
 		}
-		fi, err := info.Info()
+		resi, err := info.Info()
 		if err != nil {
 			return err
 		}
-		key := PathToKey(rel)
-		size := uint64(fi.Size())
+		pathkey := strings.TrimSuffix(path, resCacheSuffix)
+		key := PathToKey(strings.TrimSuffix(rel, resCacheSuffix))
+
+		// request cache
+		reqpath := pathkey + reqCacheSuffix
+		reqi, err := os.Stat(reqpath)
+		if err != nil {
+			return err
+		}
+		size := uint64(reqi.Size() + resi.Size())
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		c.totalBytes += size
 		c.m.Set(key, &cacheItem{
-			path:  path,
-			bytes: size,
+			key:     key,
+			pathkey: pathkey,
+			bytes:   size,
 		}, ttlcache.DefaultTTL)
 		select {
 		case <-c.warmUpStopCtx.Done():
@@ -447,7 +532,8 @@ func (c *DiskCache) removeCache(ci *cacheItem) {
 	defer func() {
 		c.d.remove(ci.key)
 	}()
-	_ = os.Remove(ci.path)
+	_ = os.Remove(ci.pathkey + reqCacheSuffix)
+	_ = os.Remove(ci.pathkey + resCacheSuffix)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.totalBytes < ci.bytes {

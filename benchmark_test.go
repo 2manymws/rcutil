@@ -127,53 +127,6 @@ func BenchmarkEncodeDecode1MBBody(b *testing.B) {
 			Header:     http.Header{},
 			Body:       io.NopCloser(strings.NewReader(sb.String())),
 		}
-		c, err := os.Create(p)
-		if err != nil {
-			b.Error(err)
-			return
-		}
-		if err := rcutil.EncodeReqRes(req, res, c); err != nil {
-			b.Error(err)
-			return
-		}
-		if err := c.Close(); err != nil {
-			b.Error(err)
-			return
-		}
-		cc, err := os.Open(p)
-		if err != nil {
-			b.Error(err)
-			return
-		}
-		if _, _, err := rcutil.DecodeReqRes(cc); err != nil {
-			b.Error(err)
-			return
-		}
-		if err := cc.Close(); err != nil {
-			b.Error(err)
-			return
-		}
-	}
-}
-
-func BenchmarkEncodeDecode1MBBody2(b *testing.B) {
-	const bodySize = 1024 * 1024 // 1MB
-	var sb strings.Builder
-	sb.Grow(bodySize)
-	for i := 0; i < bodySize; i++ {
-		sb.WriteByte(0)
-	}
-	dir := b.TempDir()
-	p := filepath.Join(dir, "cachefile")
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		req := httptest.NewRequest("GET", "http://example.com", nil)
-		res := &http.Response{
-			StatusCode: http.StatusOK,
-			Header:     http.Header{},
-			Body:       io.NopCloser(strings.NewReader(sb.String())),
-		}
 
 		sg := &sync.WaitGroup{}
 		sg.Add(2)

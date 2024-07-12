@@ -78,6 +78,7 @@ type cachedReqRes struct {
 }
 
 // EncodeReqRes encodes http.Request and http.Response.
+// Depracated: Use EncodeReq and EncodeRes instead.
 func EncodeReqRes(req *http.Request, res *http.Response, w io.Writer) error {
 	c := &cachedReqRes{
 		Method:    req.Method,
@@ -115,6 +116,7 @@ func EncodeReqRes(req *http.Request, res *http.Response, w io.Writer) error {
 }
 
 // DecodeReqRes decodes to http.Request and http.Response.
+// Depracated: Use DecodeReq and DecodeRes instead.
 func DecodeReqRes(r io.Reader) (*http.Request, *http.Response, error) {
 	c := &cachedReqRes{}
 	if err := gob.NewDecoder(r).Decode(c); err != nil {
