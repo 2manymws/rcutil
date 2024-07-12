@@ -97,9 +97,9 @@ type DiskCache struct {
 	mu                   sync.Mutex
 	keyMu                *keyrwmutex.KeyRWMutex
 	adjustMu             sync.Mutex
-	adjustStopCtx        context.Context
+	adjustStopCtx        context.Context //nostyle:contexts
 	adjustStopCancelFunc context.CancelFunc
-	warmUpStopCtx        context.Context
+	warmUpStopCtx        context.Context //nostyle:contexts
 	warmUpStopCancelFunc context.CancelFunc
 }
 
@@ -237,7 +237,7 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 
 	if !c.disableWarmUp {
 		go func() {
-			_ = c.warmUpCaches()
+			_ = c.warmUpCaches() //nostyle:handlerrors
 		}()
 	}
 
@@ -283,10 +283,10 @@ func (c *DiskCache) Store(key string, req *http.Request, res *http.Response) err
 
 // StoreWithTTL stores the response in the cache with the specified TTL.
 // If you want to store the response with no TTL, use NoLimitTTL.
-func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Response, ttl time.Duration) error {
+func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Response, ttl time.Duration) (err error) {
 	c.keyMu.LockKey(key)
 	defer func() {
-		_ = c.keyMu.UnlockKey(key)
+		err = errors.Join(err, c.keyMu.UnlockKey(key))
 	}()
 	p := filepath.Join(c.cacheRoot, KeyToPath(key, c.cacheDirLen))
 	dir := filepath.Dir(p)
@@ -375,10 +375,10 @@ func (c *DiskCache) StoreWithTTL(key string, req *http.Request, res *http.Respon
 }
 
 // Load loads the response from the cache.
-func (c *DiskCache) Load(key string) (*http.Request, *http.Response, error) {
+func (c *DiskCache) Load(key string) (_ *http.Request, _ *http.Response, err error) {
 	c.keyMu.RLockKey(key)
 	defer func() {
-		_ = c.keyMu.RUnlockKey(key)
+		err = errors.Join(err, c.keyMu.RUnlockKey(key))
 	}()
 	i := c.m.Get(key)
 	if i == nil {
@@ -485,7 +485,7 @@ func (c *DiskCache) warmUpCaches() error {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		c.totalBytes += size
-		c.m.Set(key, &cacheItem{
+		_ = c.m.Set(key, &cacheItem{ //nostyle:funcfmt
 			key:     key,
 			pathkey: pathkey,
 			bytes:   size,
@@ -532,8 +532,8 @@ func (c *DiskCache) removeCache(ci *cacheItem) {
 	defer func() {
 		c.d.remove(ci.key)
 	}()
-	_ = os.Remove(ci.pathkey + reqCacheSuffix)
-	_ = os.Remove(ci.pathkey + resCacheSuffix)
+	_ = os.Remove(ci.pathkey + reqCacheSuffix) //nostyle:handlerrors
+	_ = os.Remove(ci.pathkey + resCacheSuffix) //nostyle:handlerrors
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.totalBytes < ci.bytes {

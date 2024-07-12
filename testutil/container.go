@@ -48,7 +48,10 @@ func NewReverseProxyNGINXServer(t testing.TB, hostname string, upstreams map[str
 	}
 
 	if os.Getenv("DEBUG") != "" {
-		b, _ := os.ReadFile(p)
+		b, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Logf("%s NGINX config:\n%s\n", hostname, string(b))
 	}
 
@@ -93,7 +96,10 @@ func NewUpstreamEchoNGINXServer(t testing.TB, hostname string, bodySize int) str
 		t.Fatal(err)
 	}
 	if os.Getenv("DEBUG") != "" {
-		b, _ := os.ReadFile(confp)
+		b, err := os.ReadFile(confp)
+		if err != nil {
+			t.Fatal(err)
+		}
 		t.Logf("%s NGINX config:\n%s\n", hostname, string(b))
 	}
 
@@ -135,7 +141,9 @@ func createNGINXServer(t testing.TB, hostname, confp, indexp string) string {
 
 	if os.Getenv("DEBUG") != "" {
 		go func() {
-			_ = tailLogs(t, pool, r, os.Stderr, true)
+			if err := tailLogs(t, pool, r, os.Stderr, true); err != nil {
+				t.Error(err)
+			}
 		}()
 	}
 
@@ -176,7 +184,9 @@ func testNetwork(t testing.TB) *dockertest.Network {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() {
-			_ = pool.RemoveNetwork(n)
+			if err := pool.RemoveNetwork(n); err != nil {
+				t.Error(err)
+			}
 		})
 		return n
 	case 1:

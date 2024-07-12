@@ -325,7 +325,7 @@ func newBody(b []byte) io.ReadCloser {
 func readBody(r io.ReadCloser) string {
 	b, err := io.ReadAll(r)
 	if err != nil {
-		panic(err)
+		panic(err) //nostyle:dontpanic
 	}
 	return string(b)
 }
