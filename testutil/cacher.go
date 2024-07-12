@@ -73,6 +73,6 @@ func (c *AllCache) Hit() int {
 
 func seedToKey(seed string) string {
 	sha1 := sha1.New()
-	_, _ = io.WriteString(sha1, seed)
+	_, _ = io.WriteString(sha1, seed) //nostyle:handlerrors
 	return hex.EncodeToString(sha1.Sum(nil))
 }

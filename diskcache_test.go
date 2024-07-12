@@ -31,10 +31,17 @@ func TestDiskCacheTTL(t *testing.T) {
 	want := "hello"
 	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
 	res := &http.Response{
-		Status:     http.StatusText(http.StatusOK),
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Status:     fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK)),
 		StatusCode: http.StatusOK,
-		Header:     http.Header{"X-Test": []string{"test"}},
-		Body:       newBody([]byte(want)),
+		Header: http.Header{
+			"X-Test":         []string{"test"},
+			"Content-Length": []string{fmt.Sprintf("%d", len([]byte(want)))},
+		},
+		Body:          newBody([]byte(want)),
+		ContentLength: int64(len([]byte(want))),
 	}
 	if err := dc.Store(key, req, res); err != nil {
 		t.Fatal(err)
@@ -192,10 +199,17 @@ func TestDiskCacheWarmUp(t *testing.T) {
 	key := "test"
 	req := &http.Request{Method: http.MethodGet, Header: http.Header{}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))}
 	res := &http.Response{
-		Status:     http.StatusText(http.StatusOK),
+		Proto:      "HTTP/1.1",
+		ProtoMajor: 1,
+		ProtoMinor: 1,
+		Status:     fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK)),
 		StatusCode: http.StatusOK,
-		Header:     http.Header{"X-Test": []string{"test"}},
-		Body:       newBody([]byte("hello")),
+		Header: http.Header{
+			"X-Test":         []string{"test"},
+			"Content-Length": []string{fmt.Sprintf("%d", len([]byte("hello")))},
+		},
+		Body:          newBody([]byte("hello")),
+		ContentLength: int64(len([]byte("hello"))),
 	}
 
 	dc0, err := NewDiskCache(root, 24*time.Hour)

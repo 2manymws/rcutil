@@ -1,6 +1,7 @@
 package rcutil
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/gob"
 	"errors"
@@ -44,6 +45,26 @@ func Seed(req *http.Request, vary []string) (string, error) {
 	return strings.ToLower(seed), nil
 }
 
+// EncodeReq encodes http.Request.
+func EncodeReq(req *http.Request, w io.Writer) error {
+	return req.Write(w)
+}
+
+// EncodeRes encodes http.Response.
+func EncodeRes(res *http.Response, w io.Writer) error {
+	return res.Write(w)
+}
+
+// DecodeReq decodes to http.Request
+func DecodeReq(r io.Reader) (*http.Request, error) {
+	return http.ReadRequest(bufio.NewReader(r))
+}
+
+// DecodeRes decodes to http.Response
+func DecodeRes(r io.Reader) (*http.Response, error) {
+	return http.ReadResponse(bufio.NewReader(r), nil)
+}
+
 type cachedReqRes struct {
 	Method    string      `json:"method"`
 	Host      string      `json:"host"`
@@ -57,6 +78,7 @@ type cachedReqRes struct {
 }
 
 // EncodeReqRes encodes http.Request and http.Response.
+// Depracated: Use EncodeReq and EncodeRes instead.
 func EncodeReqRes(req *http.Request, res *http.Response, w io.Writer) error {
 	c := &cachedReqRes{
 		Method:    req.Method,
@@ -94,6 +116,7 @@ func EncodeReqRes(req *http.Request, res *http.Response, w io.Writer) error {
 }
 
 // DecodeReqRes decodes to http.Request and http.Response.
+// Depracated: Use DecodeReq and DecodeRes instead.
 func DecodeReqRes(r io.Reader) (*http.Request, *http.Response, error) {
 	c := &cachedReqRes{}
 	if err := gob.NewDecoder(r).Decode(c); err != nil {

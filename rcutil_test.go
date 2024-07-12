@@ -97,6 +97,145 @@ func TestEncodeAndDecode(t *testing.T) {
 		wantRes *http.Response
 	}{
 		{
+			req: &http.Request{Method: http.MethodGet, Header: http.Header{"Content-Type": []string{"text/plain"}}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			res: &http.Response{
+				Proto:      "HTTP/1.1",
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				Status:     fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK)),
+				StatusCode: http.StatusOK,
+				Header: http.Header{
+					"X-Cache":        []string{"MISS"},
+					"Content-Length": []string{"0"},
+				},
+				Body:          newBody(nil),
+				ContentLength: 0,
+			},
+			wantReq: &http.Request{
+				Method: http.MethodGet,
+				Header: http.Header{
+					"Content-Type": []string{"text/plain"},
+					"User-Agent":   {"Go-http-client/1.1"},
+				},
+				URL:        &url.URL{Path: "/foo"},
+				Body:       newBody([]byte("req")),
+				RequestURI: "/foo",
+			},
+			wantRes: &http.Response{
+				Proto:      "HTTP/1.1",
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				Status:     fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK)),
+				StatusCode: http.StatusOK,
+				Header: http.Header{
+					"X-Cache":        []string{"MISS"},
+					"Content-Length": []string{"0"},
+				},
+				Body:          newBody(nil),
+				ContentLength: 0,
+			},
+		},
+		{
+			req: &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			res: &http.Response{
+				Proto:      "HTTP/1.1",
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				Status:     fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK)),
+				StatusCode: http.StatusOK,
+				Header: http.Header{
+					"Content-Length": []string{fmt.Sprintf("%d", len(image))},
+				},
+				Body:          newBody(image),
+				ContentLength: int64(len(image)),
+			},
+			wantReq: &http.Request{
+				Method: http.MethodGet,
+				URL:    &url.URL{Path: "/foo"},
+				Header: http.Header{
+					"User-Agent": {"Go-http-client/1.1"},
+				},
+				Body:       newBody([]byte("req")),
+				RequestURI: "/foo",
+			},
+			wantRes: &http.Response{
+				Proto:      "HTTP/1.1",
+				ProtoMajor: 1,
+				ProtoMinor: 1,
+				Status:     fmt.Sprintf("%d %s", http.StatusOK, http.StatusText(http.StatusOK)),
+				StatusCode: http.StatusOK,
+				Header: http.Header{
+					"Content-Length": []string{fmt.Sprintf("%d", len(image))},
+				},
+				Body:          newBody(image),
+				ContentLength: int64(len(image)),
+			},
+		},
+	}
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			reqb := new(bytes.Buffer)
+			resb := new(bytes.Buffer)
+			if err := EncodeReq(tt.req, reqb); err != nil {
+				t.Fatal(err)
+			}
+			if err := EncodeRes(tt.res, resb); err != nil {
+				t.Fatal(err)
+			}
+			gotReq, err := DecodeReq(reqb)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotRes, err := DecodeRes(resb)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				gotReq.Body.Close()
+				gotRes.Body.Close()
+				tt.wantReq.Body.Close()
+				tt.wantRes.Body.Close()
+			})
+			opts := []cmp.Option{
+				cmpopts.IgnoreFields(http.Response{}, "Body"),
+				cmpopts.IgnoreFields(http.Request{}, "Body", "TransferEncoding", "Proto", "ProtoMajor", "ProtoMinor", "ContentLength"),
+				cmpopts.IgnoreFields(http.Request{}, "ctx"),
+			}
+			if diff := cmp.Diff(tt.wantReq, gotReq, opts...); diff != "" {
+				t.Error(diff)
+			}
+			gotb := readBody(gotReq.Body)
+			wantb := readBody(tt.wantReq.Body)
+			if diff := cmp.Diff(wantb, gotb); diff != "" {
+				t.Error(diff)
+			}
+
+			{
+				if diff := cmp.Diff(tt.wantRes, gotRes, opts...); diff != "" {
+					t.Error(diff)
+				}
+				gotb := readBody(gotRes.Body)
+				wantb := readBody(tt.wantRes.Body)
+				if diff := cmp.Diff(wantb, gotb); diff != "" {
+					t.Error(diff)
+				}
+			}
+		})
+	}
+}
+
+func TestDeprecatedEncodeAndDecode(t *testing.T) {
+	image, err := os.ReadFile("testdata/2manymws.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		req     *http.Request
+		res     *http.Response
+		wantReq *http.Request
+		wantRes *http.Response
+	}{
+		{
 			req:     &http.Request{Method: http.MethodGet, Header: http.Header{"Content-Type": []string{"text/plain"}}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
 			res:     &http.Response{StatusCode: http.StatusOK, Header: http.Header{"X-Cache": []string{"MISS"}}, Body: newBody(nil)},
 			wantReq: &http.Request{Method: http.MethodGet, Header: http.Header{"Content-Type": []string{"text/plain"}}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
@@ -186,7 +325,7 @@ func newBody(b []byte) io.ReadCloser {
 func readBody(r io.ReadCloser) string {
 	b, err := io.ReadAll(r)
 	if err != nil {
-		panic(err)
+		panic(err) //nostyle:dontpanic
 	}
 	return string(b)
 }

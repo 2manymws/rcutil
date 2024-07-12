@@ -16,8 +16,13 @@ func TestContainer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, _ := httputil.DumpResponse(res, true)
-	_, _ = fmt.Fprintf(os.Stderr, "echo NGINX server:\n%s\n", (string(b)))
+	b, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fmt.Fprintf(os.Stderr, "echo NGINX server:\n%s\n", (string(b))); err != nil {
+		t.Fatal(err)
+	}
 	defer res.Body.Close()
 	upstreams := map[string]string{}
 	upstreams[upstream] = fmt.Sprintf("http://%s:80", "a.example.com")
@@ -33,8 +38,13 @@ func TestContainer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		b, _ := httputil.DumpResponse(res, true)
-		_, _ = fmt.Fprintf(os.Stderr, "reverse proxy NGINX server:\n%s\n", (string(b)))
+		b, err := httputil.DumpResponse(res, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := fmt.Fprintf(os.Stderr, "reverse proxy NGINX server:\n%s\n", (string(b))); err != nil {
+			t.Fatal(err)
+		}
 		defer res.Body.Close()
 	}
 
@@ -81,7 +91,10 @@ func TestContainer(t *testing.T) {
 		}
 		defer res.Body.Close()
 		if res.Header.Get("X-Nginx-Cache") != "HIT" {
-			b, _ := httputil.DumpResponse(res, true)
+			b, err := httputil.DumpResponse(res, true)
+			if err != nil {
+				t.Fatal(err)
+			}
 			t.Fatalf("NGINX cache is not working:\n%s", string(b))
 		}
 	}
