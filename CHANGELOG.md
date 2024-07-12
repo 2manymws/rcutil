@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.16.0](https://github.com/2manymws/rcutil/compare/v0.15.0...v0.16.0) - 2024-07-12
+### New Features 🎉
+- Remove directories recursively when it is zero cache files. by @k1LoW in https://github.com/2manymws/rcutil/pull/64
+
 ## [v0.15.0](https://github.com/2manymws/rcutil/compare/v0.14.1...v0.15.0) - 2024-07-12
 ### Breaking Changes 🛠
 - Improving DiskCache performance. by @k1LoW in https://github.com/2manymws/rcutil/pull/62
