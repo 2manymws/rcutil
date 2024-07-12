@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/2manymws/rc"
@@ -151,6 +152,97 @@ func BenchmarkEncodeDecode1MBBody(b *testing.B) {
 		if err := cc.Close(); err != nil {
 			b.Error(err)
 			return
+		}
+	}
+}
+
+func BenchmarkEncodeDecode1MBBody2(b *testing.B) {
+	const bodySize = 1024 * 1024 // 1MB
+	var sb strings.Builder
+	sb.Grow(bodySize)
+	for i := 0; i < bodySize; i++ {
+		sb.WriteByte(0)
+	}
+	dir := b.TempDir()
+	p := filepath.Join(dir, "cachefile")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		req := httptest.NewRequest("GET", "http://example.com", nil)
+		res := &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{},
+			Body:       io.NopCloser(strings.NewReader(sb.String())),
+		}
+
+		sg := &sync.WaitGroup{}
+		sg.Add(2)
+
+		go func() {
+			defer sg.Done()
+			c, err := os.Create(p + ".request")
+			if err != nil {
+				b.Error(err)
+				return
+			}
+			if err := rcutil.EncodeReq(req, c); err != nil {
+				b.Error(err)
+			}
+			if err := c.Close(); err != nil {
+				b.Error(err)
+			}
+		}()
+
+		go func() {
+			defer sg.Done()
+			c, err := os.Create(p + ".response")
+			if err != nil {
+				b.Error(err)
+				return
+			}
+			if err := rcutil.EncodeRes(res, c); err != nil {
+				b.Error(err)
+			}
+			if err := c.Close(); err != nil {
+				b.Error(err)
+			}
+		}()
+
+		sg.Wait()
+
+		{
+			sg := &sync.WaitGroup{}
+			sg.Add(2)
+			go func() {
+				defer sg.Done()
+				reqc, err := os.Open(p + ".request")
+				if err != nil {
+					b.Error(err)
+					return
+				}
+				if _, err := rcutil.DecodeReq(reqc); err != nil {
+					b.Error(err)
+				}
+				if err := reqc.Close(); err != nil {
+					b.Error(err)
+				}
+			}()
+			go func() {
+				defer sg.Done()
+				resc, err := os.Open(p + ".response")
+				if err != nil {
+					b.Error(err)
+					return
+				}
+				if _, err := rcutil.DecodeRes(resc); err != nil {
+					b.Error(err)
+				}
+				if err := resc.Close(); err != nil {
+					b.Error(err)
+				}
+			}()
+
+			sg.Wait()
 		}
 	}
 }
