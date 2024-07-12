@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.15.0](https://github.com/2manymws/rcutil/compare/v0.14.1...v0.15.0) - 2024-07-12
+### Breaking Changes 🛠
+- Improving DiskCache performance. by @k1LoW in https://github.com/2manymws/rcutil/pull/62
+### Other Changes
+- Bump github.com/docker/docker from 24.0.7+incompatible to 24.0.9+incompatible by @dependabot in https://github.com/2manymws/rcutil/pull/60
+- Add oldstable by @k1LoW in https://github.com/2manymws/rcutil/pull/63
+
 ## [v0.14.1](https://github.com/2manymws/rcutil/compare/v0.14.0...v0.14.1) - 2024-03-06
 ### Fix bug 🐛
 - Fix problem of blocking due to ch when StopAll is called. by @k1LoW in https://github.com/2manymws/rcutil/pull/58
