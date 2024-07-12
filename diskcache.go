@@ -27,10 +27,6 @@ const (
 	DefaultCacheDirLen = 2
 
 	defaultAdjustPercentage = 80
-
-	reqSuffix = ".request"
-
-	resSuffix = ".response"
 )
 
 type deque struct {
