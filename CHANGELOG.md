@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.16.1](https://github.com/2manymws/rcutil/compare/v0.16.0...v0.16.1) - 2024-07-19
+### Other Changes
+- Revert "Remove directories recursively when it is zero cache files." by @k1LoW in https://github.com/2manymws/rcutil/pull/66
+
 ## [v0.16.0](https://github.com/2manymws/rcutil/compare/v0.15.0...v0.16.0) - 2024-07-12
 ### New Features 🎉
 - Remove directories recursively when it is zero cache files. by @k1LoW in https://github.com/2manymws/rcutil/pull/64
