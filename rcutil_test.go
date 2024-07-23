@@ -97,7 +97,14 @@ func TestEncodeAndDecode(t *testing.T) {
 		wantRes *http.Response
 	}{
 		{
-			req: &http.Request{Method: http.MethodGet, Header: http.Header{"Content-Type": []string{"text/plain"}}, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			req: func() *http.Request {
+				req, err := http.NewRequest(http.MethodGet, "https://example.com/foo", newBody([]byte("req")))
+				if err != nil {
+					t.Fatal(err)
+				}
+				req.Header.Set("Content-Type", "text/plain")
+				return req
+			}(),
 			res: &http.Response{
 				Proto:      "HTTP/1.1",
 				ProtoMajor: 1,
@@ -117,6 +124,7 @@ func TestEncodeAndDecode(t *testing.T) {
 					"Content-Type": []string{"text/plain"},
 					"User-Agent":   {"Go-http-client/1.1"},
 				},
+				Host:       "example.com",
 				URL:        &url.URL{Path: "/foo"},
 				Body:       newBody([]byte("req")),
 				RequestURI: "/foo",
@@ -136,7 +144,12 @@ func TestEncodeAndDecode(t *testing.T) {
 			},
 		},
 		{
-			req: &http.Request{Method: http.MethodGet, URL: &url.URL{Path: "/foo"}, Body: newBody([]byte("req"))},
+			req: &http.Request{
+				Method: http.MethodGet,
+				Host:   "example.com",
+				URL:    &url.URL{Path: "/foo"},
+				Body:   newBody([]byte("req")),
+			},
 			res: &http.Response{
 				Proto:      "HTTP/1.1",
 				ProtoMajor: 1,
@@ -151,6 +164,7 @@ func TestEncodeAndDecode(t *testing.T) {
 			},
 			wantReq: &http.Request{
 				Method: http.MethodGet,
+				Host:   "example.com",
 				URL:    &url.URL{Path: "/foo"},
 				Header: http.Header{
 					"User-Agent": {"Go-http-client/1.1"},
