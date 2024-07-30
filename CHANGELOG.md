@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.16.2](https://github.com/2manymws/rcutil/compare/v0.16.1...v0.16.2) - 2024-07-30
+### Other Changes
+- Update docker packages by @k1LoW in https://github.com/2manymws/rcutil/pull/70
+
 ## [v0.16.1](https://github.com/2manymws/rcutil/compare/v0.16.0...v0.16.1) - 2024-07-19
 ### Other Changes
 - Revert "Remove directories recursively when it is zero cache files." by @k1LoW in https://github.com/2manymws/rcutil/pull/66
