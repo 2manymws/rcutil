@@ -212,8 +212,7 @@ func TestEncodeAndDecode(t *testing.T) {
 			})
 			opts := []cmp.Option{
 				cmpopts.IgnoreFields(http.Response{}, "Body"),
-				cmpopts.IgnoreFields(http.Request{}, "Body", "TransferEncoding", "Proto", "ProtoMajor", "ProtoMinor", "ContentLength"),
-				cmpopts.IgnoreFields(http.Request{}, "ctx"),
+				cmpopts.IgnoreFields(http.Request{}, "Body", "TransferEncoding", "Proto", "ProtoMajor", "ProtoMinor", "ContentLength", "ctx", "pat", "matches", "otherValues"),
 			}
 			if diff := cmp.Diff(tt.wantReq, gotReq, opts...); diff != "" {
 				t.Error(diff)
@@ -280,8 +279,7 @@ func TestDeprecatedEncodeAndDecode(t *testing.T) {
 			})
 			opts := []cmp.Option{
 				cmpopts.IgnoreFields(http.Response{}, "Body"),
-				cmpopts.IgnoreFields(http.Request{}, "Body"),
-				cmpopts.IgnoreFields(http.Request{}, "ctx"),
+				cmpopts.IgnoreFields(http.Request{}, "Body", "ctx", "pat", "matches", "otherValues"),
 			}
 			if diff := cmp.Diff(tt.wantReq, gotReq, opts...); diff != "" {
 				t.Error(diff)
