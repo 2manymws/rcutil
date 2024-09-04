@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.16.3](https://github.com/2manymws/rcutil/compare/v0.16.2...v0.16.3) - 2024-09-04
+### Other Changes
+- Use oldstable by @k1LoW in https://github.com/2manymws/rcutil/pull/72
+- Bump github.com/opencontainers/runc from 1.1.12 to 1.1.14 by @dependabot in https://github.com/2manymws/rcutil/pull/71
+- Bump github.com/docker/docker from 26.1.4+incompatible to 26.1.5+incompatible by @dependabot in https://github.com/2manymws/rcutil/pull/74
+
 ## [v0.16.2](https://github.com/2manymws/rcutil/compare/v0.16.1...v0.16.2) - 2024-07-30
 ### Other Changes
 - Update docker packages by @k1LoW in https://github.com/2manymws/rcutil/pull/70
