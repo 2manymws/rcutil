@@ -534,6 +534,7 @@ func (c *DiskCache) removeCache(ci *cacheItem) {
 	}()
 	_ = os.Remove(ci.pathkey + reqCacheSuffix) //nostyle:handlerrors
 	_ = os.Remove(ci.pathkey + resCacheSuffix) //nostyle:handlerrors
+	_ = c.recursiveRemoveDir(ci.pathkey)       //nostyle:handlerrors
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.totalBytes < ci.bytes {
