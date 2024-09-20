@@ -310,9 +310,6 @@ func TestRecursiveRemoveDir(t *testing.T) {
 			[]string{"a/b/c/d", "a/b/c/e"},
 			"a/b/c/d",
 			[]string{
-				"a",
-				"a/b",
-				"a/b/c",
 				"a/b/c/e",
 			},
 		},
@@ -321,9 +318,6 @@ func TestRecursiveRemoveDir(t *testing.T) {
 			[]string{"a/b/c/d", "x/b/c/d"},
 			"a/b/c/d",
 			[]string{
-				"x",
-				"x/b",
-				"x/b/c",
 				"x/b/c/d",
 			},
 		},
@@ -362,6 +356,14 @@ func TestRecursiveRemoveDir(t *testing.T) {
 					t.Fatal(err)
 				}
 				if rel == "." {
+					return nil
+				}
+				// leaf dir only
+				entries, err := os.ReadDir(path)
+				if err != nil {
+					return err
+				}
+				if len(entries) > 0 {
 					return nil
 				}
 				got = append(got, rel)
