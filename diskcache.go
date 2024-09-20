@@ -543,6 +543,37 @@ func (c *DiskCache) removeCache(ci *cacheItem) {
 	}
 }
 
+func (c *DiskCache) recursiveRemoveDir(dir string) error {
+	if c.cacheRoot == dir {
+		return nil
+	}
+	parent := filepath.Dir(dir)
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		return err
+	}
+	dirs := 0
+	for _, e := range entries {
+		if e.IsDir() {
+			dirs++
+		}
+	}
+	if dirs > 1 {
+		if err := os.RemoveAll(dir); err != nil {
+			return err
+		}
+		return nil
+	}
+	if parent == c.cacheRoot {
+		if err := os.RemoveAll(dir); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return c.recursiveRemoveDir(parent)
+}
+
 func isWritable(dir string) (bool, error) {
 	const tmpFile = "tmpfile"
 	file, err := os.CreateTemp(dir, tmpFile)
