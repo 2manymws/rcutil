@@ -333,7 +333,9 @@ func TestRecursiveRemoveDir(t *testing.T) {
 			t.Parallel()
 			root := t.TempDir()
 			cacheRoot := filepath.Join(root, "cache")
-			_ = os.RemoveAll(cacheRoot)
+			if err := os.RemoveAll(cacheRoot); err != nil {
+				t.Fatal(err)
+			}
 			if err := os.MkdirAll(cacheRoot, 0755); err != nil {
 				t.Fatal(err)
 			}
@@ -352,6 +354,9 @@ func TestRecursiveRemoveDir(t *testing.T) {
 			// read all files
 			var got []string
 			if err := filepath.Walk(cacheRoot, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
 				rel, err := filepath.Rel(cacheRoot, path)
 				if err != nil {
 					t.Fatal(err)
