@@ -534,6 +534,7 @@ func (c *DiskCache) removeCache(ci *cacheItem) {
 	}()
 	_ = os.Remove(ci.pathkey + reqCacheSuffix) //nostyle:handlerrors
 	_ = os.Remove(ci.pathkey + resCacheSuffix) //nostyle:handlerrors
+	_ = c.recursiveRemoveDir(ci.pathkey)       //nostyle:handlerrors
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.totalBytes < ci.bytes {
@@ -541,6 +542,38 @@ func (c *DiskCache) removeCache(ci *cacheItem) {
 	} else {
 		c.totalBytes -= ci.bytes
 	}
+}
+
+func (c *DiskCache) recursiveRemoveDir(dir string) error {
+	if c.cacheRoot == dir {
+		return nil
+	}
+	parent := filepath.Dir(dir)
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		return err
+	}
+	dirs := 0
+	for _, e := range entries {
+		if e.IsDir() {
+			dirs++
+			if dirs > 1 {
+				// There are directories beside it, so delete only itself.
+				if err := os.RemoveAll(dir); err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	}
+	if parent == c.cacheRoot {
+		if err := os.RemoveAll(dir); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return c.recursiveRemoveDir(parent)
 }
 
 func isWritable(dir string) (bool, error) {

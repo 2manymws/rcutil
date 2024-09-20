@@ -291,3 +291,90 @@ func TestDiskCacheStopAll(t *testing.T) {
 	}
 	dc.StopAll()
 }
+
+func TestRecursiveRemoveDir(t *testing.T) {
+	tests := []struct {
+		name   string
+		dirs   []string
+		target string
+		want   []string
+	}{
+		{
+			"single dir",
+			[]string{"a/b/c/d"},
+			"a/b/c/d",
+			nil,
+		},
+		{
+			"multiple dirs",
+			[]string{"a/b/c/d", "a/b/c/e"},
+			"a/b/c/d",
+			[]string{
+				"a/b/c/e",
+			},
+		},
+		{
+			"multiple dirs with different root",
+			[]string{"a/b/c/d", "x/b/c/d"},
+			"a/b/c/d",
+			[]string{
+				"x/b/c/d",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			cacheRoot := filepath.Join(root, "cache")
+			if err := os.RemoveAll(cacheRoot); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.MkdirAll(cacheRoot, 0755); err != nil {
+				t.Fatal(err)
+			}
+			dc, err := NewDiskCache(cacheRoot, 24*time.Hour)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, d := range tt.dirs {
+				if err := os.MkdirAll(filepath.Join(cacheRoot, d), 0755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := dc.recursiveRemoveDir(filepath.Join(cacheRoot, tt.target)); err != nil {
+				t.Error(err)
+			}
+			// read all files
+			var got []string
+			if err := filepath.Walk(cacheRoot, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				rel, err := filepath.Rel(cacheRoot, path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if rel == "." {
+					return nil
+				}
+				// leaf dir only
+				entries, err := os.ReadDir(path)
+				if err != nil {
+					return err
+				}
+				if len(entries) > 0 {
+					return nil
+				}
+				got = append(got, rel)
+				return nil
+			}); err != nil {
+				t.Error(err)
+			}
+
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Error(diff)
+			}
+		})
+	}
+}
