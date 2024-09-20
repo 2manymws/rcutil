@@ -558,6 +558,7 @@ func (c *DiskCache) recursiveRemoveDir(dir string) error {
 		if e.IsDir() {
 			dirs++
 			if dirs > 1 {
+				// There are directories beside it, so delete only itself.
 				if err := os.RemoveAll(dir); err != nil {
 					return err
 				}
