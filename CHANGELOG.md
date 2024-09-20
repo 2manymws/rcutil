@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.16.4](https://github.com/2manymws/rcutil/compare/v0.16.3...v0.16.4) - 2024-09-20
+### Fix bug 🐛
+- When deleting the cache, unnecessary directories are also deleted. by @k1LoW in https://github.com/2manymws/rcutil/pull/75
+### Other Changes
+- Update go directive version by @k1LoW in https://github.com/2manymws/rcutil/pull/76
+
 ## [v0.16.3](https://github.com/2manymws/rcutil/compare/v0.16.2...v0.16.3) - 2024-09-04
 ### Other Changes
 - Use oldstable by @k1LoW in https://github.com/2manymws/rcutil/pull/72
