@@ -557,13 +557,13 @@ func (c *DiskCache) recursiveRemoveDir(dir string) error {
 	for _, e := range entries {
 		if e.IsDir() {
 			dirs++
+			if dirs > 1 {
+				if err := os.RemoveAll(dir); err != nil {
+					return err
+				}
+				return nil
+			}
 		}
-	}
-	if dirs > 1 {
-		if err := os.RemoveAll(dir); err != nil {
-			return err
-		}
-		return nil
 	}
 	if parent == c.cacheRoot {
 		if err := os.RemoveAll(dir); err != nil {
