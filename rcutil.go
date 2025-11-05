@@ -55,12 +55,12 @@ func EncodeRes(res *http.Response, w io.Writer) error {
 	return res.Write(w)
 }
 
-// DecodeReq decodes to http.Request
+// DecodeReq decodes to http.Request.
 func DecodeReq(r io.Reader) (*http.Request, error) {
 	return http.ReadRequest(bufio.NewReader(r))
 }
 
-// DecodeRes decodes to http.Response
+// DecodeRes decodes to http.Response.
 func DecodeRes(r io.Reader) (*http.Response, error) {
 	return http.ReadResponse(bufio.NewReader(r), nil)
 }
@@ -142,8 +142,8 @@ func DecodeReqRes(r io.Reader) (*http.Request, *http.Response, error) {
 	return req, res, nil
 }
 
-// KeyToPath converts key to path
-// It is the responsibility of the user to pass path-safe keys
+// KeyToPath converts key to path.
+// It is the responsibility of the user to pass path-safe keys.
 func KeyToPath(key string, n int) string {
 	if n <= 0 {
 		return key
@@ -160,7 +160,7 @@ func KeyToPath(key string, n int) string {
 	return result.String()
 }
 
-// PathToKey converts path to key
+// PathToKey converts path to key.
 func PathToKey(path string) string {
 	return strings.ReplaceAll(path, string(filepath.Separator), "")
 }
@@ -177,7 +177,10 @@ func (wc *WriteCounter) Write(p []byte) (int, error) {
 	if err != nil {
 		return n, err
 	}
-	wc.Bytes += uint64(n)
+	if n < 0 {
+		n = 0
+	}
+	wc.Bytes += uint64(n) //nolint:gosec // Write() return value is guaranteed to be non-negative
 	return n, err
 }
 

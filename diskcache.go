@@ -66,7 +66,11 @@ func (d *deque) back() string {
 	if d.lru.Len() == 0 {
 		return ""
 	}
-	return d.lru.Back().Value.(string)
+	v, ok := d.lru.Back().Value.(string)
+	if !ok {
+		return ""
+	}
+	return v
 }
 
 func (d *deque) remove(key string) {
@@ -251,7 +255,7 @@ func (c *DiskCache) StopAll() {
 	c.StopAdjust()
 }
 
-// StartAutoCleanup starts the goroutine of automatic cache cleanup
+// StartAutoCleanup starts the goroutine of automatic cache cleanup.
 func (c *DiskCache) StartAutoCleanup() {
 	go c.m.Start()
 }
@@ -261,7 +265,7 @@ func (c *DiskCache) StopAutoCleanup() {
 	c.m.Stop()
 }
 
-// StopAdjust
+// StopAdjust stops the auto adjust cache.
 func (c *DiskCache) StopAdjust() {
 	c.adjustStopCancelFunc()
 }
@@ -451,7 +455,7 @@ func (c *DiskCache) Metrics() Metrics {
 	}
 }
 
-// warmUpCaches warm up the cache
+// warmUpCaches warm up the cache.
 func (c *DiskCache) warmUpCaches() error {
 	return filepath.WalkDir(c.cacheRoot, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
@@ -481,7 +485,11 @@ func (c *DiskCache) warmUpCaches() error {
 		if err != nil {
 			return err
 		}
-		size := uint64(reqi.Size() + resi.Size())
+		totalSize := reqi.Size() + resi.Size()
+		if totalSize < 0 {
+			totalSize = 0
+		}
+		size := uint64(totalSize) //nolint:gosec // File sizes are guaranteed to be non-negative in practice
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		c.totalBytes += size
