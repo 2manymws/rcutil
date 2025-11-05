@@ -66,7 +66,7 @@ func NewUpstreamEchoNGINXServer(t testing.TB, hostname string, bodySize int) str
 		t.Fatal(err)
 	}
 	confp := filepath.Join(dir, fmt.Sprintf("%s.nginx_echo.conf", hostname))
-	if err := os.WriteFile(confp, cb, os.ModePerm); err != nil {
+	if err := os.WriteFile(confp, cb, os.ModePerm); err != nil { //nolint:gosec // Test file in temp directory
 		t.Fatal(err)
 	}
 	tb, err := templates.ReadFile("templates/index.html.tmpl")
@@ -114,7 +114,7 @@ func createNGINXServer(t testing.TB, hostname, confp, indexp string) string {
 		t.Fatal(err)
 	}
 	sp := filepath.Join(dir, "sleep.js")
-	if err := os.WriteFile(sp, sb, 0644); err != nil {
+	if err := os.WriteFile(sp, sb, 0644); err != nil { //nolint:gosec // Test file in temp directory
 		t.Fatal(err)
 	}
 	pool, err := dockertest.NewPool("")
@@ -156,7 +156,7 @@ func createNGINXServer(t testing.TB, hostname, confp, indexp string) string {
 	var urlstr string
 	if err := pool.Retry(func() error {
 		urlstr = fmt.Sprintf("http://127.0.0.1:%s", r.GetPort("80/tcp"))
-		if _, err := http.Get(urlstr); err != nil {
+		if _, err := http.Get(urlstr); err != nil { //nolint:gosec // Test server URL from container port
 			time.Sleep(1 * time.Second)
 			return err
 		}

@@ -1,8 +1,41 @@
+version: "2"
 run:
-  go: 1.21
-  modules-download-mode: mod
+  timeout: 2m
 linters:
-  fast: false
-issues:
-  exclude:
-    - SA3000
+  enable:
+    - errorlint
+    - godot
+    - gosec
+    - misspell
+    - revive
+    - funcorder
+  settings:
+    errcheck:
+      check-type-assertions: true
+    misspell:
+      locale: US
+    revive:
+      rules:
+        - name: unexported-return
+          disabled: true
+        - name: exported
+          disabled: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - tmpmod
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

@@ -1,7 +1,7 @@
 package testutil
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // Using SHA1 for cache key generation, not for security
 	"encoding/hex"
 	"io"
 	"net/http"
@@ -68,11 +68,11 @@ func (c *AllCache) Store(req *http.Request, res *http.Response, _ time.Time) err
 
 func (c *AllCache) Hit() int {
 	m := c.dc.Metrics()
-	return int(m.Hits)
+	return int(m.Hits) //nolint:gosec // Converting metrics counter to int for test utility
 }
 
 func seedToKey(seed string) string {
-	sha1 := sha1.New()
+	sha1 := sha1.New() //nolint:gosec // Using SHA1 for cache key generation, not for security
 	_, _ = io.WriteString(sha1, seed) //nostyle:handlerrors
 	return hex.EncodeToString(sha1.Sum(nil))
 }

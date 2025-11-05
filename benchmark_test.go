@@ -39,7 +39,7 @@ func BenchmarkNGINXCache1MBBody(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			i := rand.Intn(cacherange)
+			i := rand.Intn(cacherange) //nolint:gosec // Weak random number is acceptable for benchmark test
 			req, err := http.NewRequest("GET", fmt.Sprintf("%s/cache/%d", proxy, i), nil)
 			if err != nil {
 				b.Error(err)
@@ -88,7 +88,7 @@ func BenchmarkDiscCache1MBBody(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			i := rand.Intn(cacherange)
+			i := rand.Intn(cacherange) //nolint:gosec // Weak random number is acceptable for benchmark test
 			req, err := http.NewRequest("GET", fmt.Sprintf("%s/cache/%d", proxy.URL, i), nil)
 			if err != nil {
 				b.Error(err)
