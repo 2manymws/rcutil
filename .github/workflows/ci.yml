@@ -18,33 +18,33 @@ jobs:
       actions: write
     steps:
       - name: Check out source code
-        uses: actions/checkout@v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Set up Go
         id: setup-go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
 
       - name: Run lint
-        uses: reviewdog/action-golangci-lint@v2
+        uses: reviewdog/action-golangci-lint@f9bba13753278f6a73b27a56a3ffb1bfda90ed71 # v2.8.0
         with:
           fail_level: warning
           go_version-file: go.mod
 
       - name: Run gostyle
-        uses: k1LoW/gostyle-action@v1
+        uses: k1LoW/gostyle-action@56cc0ed69a96366aa5be08df58a858e306c1518c # v1.5.0
         with:
           config-file: .gostyle.yml
           fail-on-error: true
 
       - name: Check oldstable
-        uses: k1LoW/oldstable@v2
+        uses: k1LoW/oldstable@28b6b2ef2c743f8dbeecba50626e9313b7fa938f # v2.0.0
 
       - name: Run tests
         run: make ci
 
       - name: Run octocov
-        uses: k1LoW/octocov-action@v1
+        uses: k1LoW/octocov-action@73d561f65d59e66899ed5c87e4621a913b5d5c20 # v1.5.0
         env:
           OCTOCOV_CUSTOM_METRICS_BENCHMARK: custom_metrics_benchmark.json
