@@ -18,7 +18,7 @@ updates:
     assignees:
       - "k1LoW"
       - "pyama86"
-      - "drumato"
+      - "Drumato"
 
   - package-ecosystem: "gomod"
     directory: "/"
@@ -37,4 +37,4 @@ updates:
     assignees:
       - "k1LoW"
       - "pyama86"
-      - "drumato"
+      - "Drumato"
