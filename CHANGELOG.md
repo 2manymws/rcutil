@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.16.5](https://github.com/2manymws/rcutil/compare/v0.16.4...v0.16.5) - 2025-11-06
+### Other Changes
+- chore: update lint/ci setting by @k1LoW in https://github.com/2manymws/rcutil/pull/80
+- chore: update tagpr setting by @k1LoW in https://github.com/2manymws/rcutil/pull/84
+- Bump github.com/docker/docker from 26.1.5+incompatible to 28.0.0+incompatible by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/78
+- Bump github.com/opencontainers/runc from 1.1.14 to 1.2.8 by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/79
+- chore: bump up go directive version by @k1LoW in https://github.com/2manymws/rcutil/pull/85
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/81
+- chore(deps): bump the dependencies group with 5 updates by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/82
+- chore(deps): bump github.com/go-viper/mapstructure/v2 from 2.1.0 to 2.4.0 by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/86
+
 ## [v0.16.4](https://github.com/2manymws/rcutil/compare/v0.16.3...v0.16.4) - 2024-09-20
 ### Fix bug 🐛
 - When deleting the cache, unnecessary directories are also deleted. by @k1LoW in https://github.com/2manymws/rcutil/pull/75
