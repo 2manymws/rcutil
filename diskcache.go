@@ -553,17 +553,31 @@ func (c *DiskCache) removeCache(ci *cacheItem) {
 }
 
 func (c *DiskCache) recursiveRemoveDir(dir string) error {
-	// Walk upward and remove empty directories only. os.Remove fails on
-	// non-empty directories, which lets sibling cache files (e.g. another
-	// key sharing the same parent) survive. Stop at cacheRoot.
+	// Walk upward and remove empty directories only. Check emptiness
+	// explicitly with ReadDir so the natural "dir not empty" stop
+	// condition can be distinguished from real IO/permission errors.
+	// Stop at cacheRoot.
 	for dir != c.cacheRoot {
 		parent := filepath.Dir(dir)
 		if parent == dir {
 			// Reached filesystem root without hitting cacheRoot.
 			return nil
 		}
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// dir is a path stem (or already gone); keep walking up.
+				dir = parent
+				continue
+			}
+			return err
+		}
+		if len(entries) > 0 {
+			// Sibling file or directory remains; stop here.
+			return nil
+		}
 		if err := os.Remove(dir); err != nil && !os.IsNotExist(err) {
-			return nil //nostyle:handlerrors
+			return err
 		}
 		dir = parent
 	}
