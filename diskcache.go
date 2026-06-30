@@ -608,8 +608,8 @@ func isDirNotEmpty(err error) bool {
 		return true
 	}
 	if runtime.GOOS == "windows" {
-		var errno syscall.Errno
-		if errors.As(err, &errno) && errno == 145 {
+		var eno syscall.Errno
+		if errors.As(err, &eno) && eno == 145 {
 			return true
 		}
 	}
