@@ -199,6 +199,11 @@ type cacheItem struct {
 // maxKeys: the maximum number of keys that can be stored in the cache. If NoLimitKeys is specified, there is no limit.
 // maxTotalBytes: the maximum number of bytes that can be stored in the cache. If NoLimitTotalBytes is specified, there is no limit.
 func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheOption) (*DiskCache, error) {
+	// Clean cacheRoot up front so writability checks, stored state, and
+	// the recursiveRemoveDir stop condition all reason about the same
+	// canonical path. Without this, a trailing slash on user input would
+	// make the stop condition miss cacheRoot.
+	cacheRoot = filepath.Clean(cacheRoot)
 	if ok, err := isWritable(cacheRoot); !ok {
 		return nil, fmt.Errorf("cache root %q is not writable: %w", cacheRoot, err)
 	}
@@ -206,10 +211,7 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	warmUpStopCtx, warmUpStopCancelFunc := context.WithCancel(context.Background())
 
 	c := &DiskCache{
-		// Clean cacheRoot so it matches the form produced by filepath.Join
-		// elsewhere. Without this, a trailing slash on user input would
-		// make the recursiveRemoveDir stop condition miss cacheRoot.
-		cacheRoot:            filepath.Clean(cacheRoot),
+		cacheRoot:            cacheRoot,
 		maxKeys:              NoLimitKeys,
 		maxTotalBytes:        NoLimitTotalBytes,
 		cacheDirLen:          DefaultCacheDirLen,
