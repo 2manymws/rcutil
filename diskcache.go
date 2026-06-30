@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -205,7 +206,10 @@ func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheO
 	warmUpStopCtx, warmUpStopCancelFunc := context.WithCancel(context.Background())
 
 	c := &DiskCache{
-		cacheRoot:            cacheRoot,
+		// Clean cacheRoot so it matches the form produced by filepath.Join
+		// elsewhere. Without this, a trailing slash on user input would
+		// make the recursiveRemoveDir stop condition miss cacheRoot.
+		cacheRoot:            filepath.Clean(cacheRoot),
 		maxKeys:              NoLimitKeys,
 		maxTotalBytes:        NoLimitTotalBytes,
 		cacheDirLen:          DefaultCacheDirLen,
@@ -583,7 +587,7 @@ func (c *DiskCache) recursiveRemoveDir(dir string) error {
 				dir = parent
 				continue
 			}
-			if errors.Is(err, syscall.ENOTEMPTY) {
+			if isDirNotEmpty(err) {
 				// Raced with a writer that re-populated the dir
 				// between ReadDir and Remove. Normal stop condition.
 				return nil
@@ -593,6 +597,22 @@ func (c *DiskCache) recursiveRemoveDir(dir string) error {
 		dir = parent
 	}
 	return nil
+}
+
+// isDirNotEmpty reports whether err means "directory not empty".
+// syscall.ENOTEMPTY covers POSIX systems; Windows surfaces the same
+// situation as ERROR_DIR_NOT_EMPTY (winerror.h #145).
+func isDirNotEmpty(err error) bool {
+	if errors.Is(err, syscall.ENOTEMPTY) {
+		return true
+	}
+	if runtime.GOOS == "windows" {
+		var errno syscall.Errno
+		if errors.As(err, &errno) && errno == 145 {
+			return true
+		}
+	}
+	return false
 }
 
 func isWritable(dir string) (bool, error) {
