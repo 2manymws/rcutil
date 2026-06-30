@@ -398,25 +398,28 @@ func TestRecursiveRemoveDirKeepsSiblingFiles(t *testing.T) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, f := range []string{"0.request", "0.response", "1.request", "1.response"} {
-		if err := os.WriteFile(filepath.Join(dir, f), []byte("x"), 0644); err != nil {
-			t.Fatal(err)
+	suffixes := []string{reqCacheSuffix, resCacheSuffix}
+	for _, key := range []string{"0", "1"} {
+		for _, s := range suffixes {
+			if err := os.WriteFile(filepath.Join(dir, key+s), []byte("x"), 0644); err != nil {
+				t.Fatal(err)
+			}
 		}
 	}
 
 	// Simulate the production sequence: removeCache deletes the two
 	// files for key "0", then calls recursiveRemoveDir on the stem.
-	if err := os.Remove(filepath.Join(dir, "0.request")); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Remove(filepath.Join(dir, "0.response")); err != nil {
-		t.Fatal(err)
+	for _, s := range suffixes {
+		if err := os.Remove(filepath.Join(dir, "0"+s)); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err := dc.recursiveRemoveDir(filepath.Join(dir, "0")); err != nil {
 		t.Errorf("recursiveRemoveDir: %v", err)
 	}
 
-	for _, f := range []string{"1.request", "1.response"} {
+	for _, s := range suffixes {
+		f := "1" + s
 		if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
 			t.Errorf("surviving file %s missing: %v", f, err)
 		}
