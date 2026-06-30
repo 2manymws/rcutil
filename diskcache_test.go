@@ -401,7 +401,7 @@ func TestRecursiveRemoveDirKeepsSiblingFiles(t *testing.T) {
 	suffixes := []string{reqCacheSuffix, resCacheSuffix}
 	for _, key := range []string{"0", "1"} {
 		for _, s := range suffixes {
-			if err := os.WriteFile(filepath.Join(dir, key+s), []byte("x"), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(dir, key+s), []byte("x"), 0600); err != nil {
 				t.Fatal(err)
 			}
 		}
