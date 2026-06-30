@@ -600,10 +600,11 @@ func (c *DiskCache) recursiveRemoveDir(dir string) error {
 }
 
 // isDirNotEmpty reports whether err means "directory not empty".
-// syscall.ENOTEMPTY covers POSIX systems; Windows surfaces the same
-// situation as ERROR_DIR_NOT_EMPTY (winerror.h #145).
+// POSIX (SUSv3) allows rmdir to return either ENOTEMPTY or EEXIST for
+// a non-empty directory, so both are treated the same. Windows
+// surfaces the same situation as ERROR_DIR_NOT_EMPTY (winerror.h #145).
 func isDirNotEmpty(err error) bool {
-	if errors.Is(err, syscall.ENOTEMPTY) {
+	if errors.Is(err, syscall.ENOTEMPTY) || errors.Is(err, syscall.EEXIST) {
 		return true
 	}
 	if runtime.GOOS == "windows" {
