@@ -199,6 +199,13 @@ type cacheItem struct {
 // maxKeys: the maximum number of keys that can be stored in the cache. If NoLimitKeys is specified, there is no limit.
 // maxTotalBytes: the maximum number of bytes that can be stored in the cache. If NoLimitTotalBytes is specified, there is no limit.
 func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheOption) (*DiskCache, error) {
+	// Reject empty input explicitly. filepath.Clean("") returns ".",
+	// which would silently turn an empty argument into the current
+	// working directory and cause cache files to land somewhere the
+	// caller never intended.
+	if cacheRoot == "" {
+		return nil, fmt.Errorf("cache root must not be empty")
+	}
 	// Clean cacheRoot up front so writability checks, stored state, and
 	// the recursiveRemoveDir stop condition all reason about the same
 	// canonical path. Without this, a trailing slash on user input would
