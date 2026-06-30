@@ -1,5 +1,20 @@
 # Changelog
 
+## [v0.16.6](https://github.com/2manymws/rcutil/compare/v0.16.5...v0.16.6) - 2026-06-30
+
+### Fix bug 🐛
+- fix: stop recursiveRemoveDir from deleting sibling cache files by @k1LoW in https://github.com/2manymws/rcutil/pull/101
+### Other Changes
+- chore(deps): bump the dependencies group across 1 directory with 4 updates by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/90
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/91
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/92
+- chore(deps): bump github.com/docker/cli from 27.4.1+incompatible to 29.2.0+incompatible by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/93
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/88
+- chore(deps): bump github.com/opencontainers/runc from 1.2.8 to 1.3.6 by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/97
+- ci(workflows): update Go version configuration to use `oldstable` by @k1LoW in https://github.com/2manymws/rcutil/pull/100
+- chore(deps): bump the dependencies group across 1 directory with 5 updates by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/98
+- chore(deps): bump the dependencies group across 1 directory with 2 updates by @dependabot[bot] in https://github.com/2manymws/rcutil/pull/99
+
 ## [v0.16.5](https://github.com/2manymws/rcutil/compare/v0.16.4...v0.16.5) - 2025-11-06
 ### Other Changes
 - chore: update lint/ci setting by @k1LoW in https://github.com/2manymws/rcutil/pull/80
