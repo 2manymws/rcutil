@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/2manymws/keyrwmutex"
@@ -576,7 +577,17 @@ func (c *DiskCache) recursiveRemoveDir(dir string) error {
 			// Sibling file or directory remains; stop here.
 			return nil
 		}
-		if err := os.Remove(dir); err != nil && !os.IsNotExist(err) {
+		if err := os.Remove(dir); err != nil {
+			if os.IsNotExist(err) {
+				// Raced with another remover; keep walking up.
+				dir = parent
+				continue
+			}
+			if errors.Is(err, syscall.ENOTEMPTY) {
+				// Raced with a writer that re-populated the dir
+				// between ReadDir and Remove. Normal stop condition.
+				return nil
+			}
 			return err
 		}
 		dir = parent
