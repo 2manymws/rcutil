@@ -1,15 +1,15 @@
 module github.com/2manymws/rcutil
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/2manymws/keyrwmutex v1.1.0
 	github.com/2manymws/rc v0.14.1
 	github.com/2manymws/rp v0.8.3
 	github.com/google/go-cmp v0.7.0
-	github.com/jellydator/ttlcache/v3 v3.4.0
+	github.com/jellydator/ttlcache/v3 v3.4.1
 	github.com/ory/dockertest/v3 v3.12.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.21.0
 )
 
 require (
