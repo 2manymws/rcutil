@@ -30,7 +30,12 @@ jobs:
         uses: reviewdog/action-golangci-lint@f9bba13753278f6a73b27a56a3ffb1bfda90ed71 # v2.8.0
         with:
           fail_level: warning
-          go_version_file: go.mod
+          # Use a Major.Minor spec rather than oldstable: the setup-go
+          # bundled inside this action is older than the one in the
+          # top-level Set up Go step and does not understand the
+          # oldstable alias. ".x" tells setup-go to pick the latest
+          # 1.25 patch (currently 1.25.11), matching the top-level step.
+          go_version: "1.25.x"
 
       - name: Run gostyle
         uses: k1LoW/gostyle-action@e1b847d37b3041c5fdb8b911bcf00b350779ca61 # v1.5.1
