@@ -378,3 +378,53 @@ func TestRecursiveRemoveDir(t *testing.T) {
 		})
 	}
 }
+
+func TestRecursiveRemoveDirKeepsSiblingFiles(t *testing.T) {
+	// Regression: when two cache entries share a parent directory,
+	// evicting one must not delete the surviving entry's files. This
+	// is the scenario that historically surfaced as a flaky CI failure
+	// in TestDiskCacheMaxKeys via the async eviction goroutine.
+	root := t.TempDir()
+	cacheRoot := filepath.Join(root, "cache")
+	if err := os.MkdirAll(cacheRoot, 0755); err != nil {
+		t.Fatal(err)
+	}
+	dc, err := NewDiskCache(cacheRoot, 24*time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dir := filepath.Join(cacheRoot, "a", "b")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	suffixes := []string{reqCacheSuffix, resCacheSuffix}
+	for _, key := range []string{"0", "1"} {
+		for _, s := range suffixes {
+			if err := os.WriteFile(filepath.Join(dir, key+s), []byte("x"), 0600); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
+	// Simulate the production sequence: removeCache deletes the two
+	// files for key "0", then calls recursiveRemoveDir on the stem.
+	for _, s := range suffixes {
+		if err := os.Remove(filepath.Join(dir, "0"+s)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := dc.recursiveRemoveDir(filepath.Join(dir, "0")); err != nil {
+		t.Errorf("recursiveRemoveDir: %v", err)
+	}
+
+	for _, s := range suffixes {
+		f := "1" + s
+		if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
+			t.Errorf("surviving file %s missing: %v", f, err)
+		}
+	}
+	if _, err := os.Stat(dir); err != nil {
+		t.Errorf("parent dir removed: %v", err)
+	}
+}

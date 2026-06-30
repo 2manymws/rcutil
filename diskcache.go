@@ -9,9 +9,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/2manymws/keyrwmutex"
@@ -197,6 +199,18 @@ type cacheItem struct {
 // maxKeys: the maximum number of keys that can be stored in the cache. If NoLimitKeys is specified, there is no limit.
 // maxTotalBytes: the maximum number of bytes that can be stored in the cache. If NoLimitTotalBytes is specified, there is no limit.
 func NewDiskCache(cacheRoot string, defaultTTL time.Duration, opts ...DiskCacheOption) (*DiskCache, error) {
+	// Reject empty input explicitly. filepath.Clean("") returns ".",
+	// which would silently turn an empty argument into the current
+	// working directory and cause cache files to land somewhere the
+	// caller never intended.
+	if cacheRoot == "" {
+		return nil, fmt.Errorf("cache root must not be empty")
+	}
+	// Clean cacheRoot up front so writability checks, stored state, and
+	// the recursiveRemoveDir stop condition all reason about the same
+	// canonical path. Without this, a trailing slash on user input would
+	// make the stop condition miss cacheRoot.
+	cacheRoot = filepath.Clean(cacheRoot)
 	if ok, err := isWritable(cacheRoot); !ok {
 		return nil, fmt.Errorf("cache root %q is not writable: %w", cacheRoot, err)
 	}
@@ -553,35 +567,62 @@ func (c *DiskCache) removeCache(ci *cacheItem) {
 }
 
 func (c *DiskCache) recursiveRemoveDir(dir string) error {
-	if c.cacheRoot == dir {
-		return nil
-	}
-	parent := filepath.Dir(dir)
-	entries, err := os.ReadDir(parent)
-	if err != nil {
-		return err
-	}
-	dirs := 0
-	for _, e := range entries {
-		if e.IsDir() {
-			dirs++
-			if dirs > 1 {
-				// There are directories beside it, so delete only itself.
-				if err := os.RemoveAll(dir); err != nil {
-					return err
-				}
-				return nil
-			}
+	// Walk upward and remove empty directories only. Check emptiness
+	// explicitly with ReadDir so the natural "dir not empty" stop
+	// condition can be distinguished from real IO/permission errors.
+	// Stop at cacheRoot.
+	for dir != c.cacheRoot {
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached filesystem root without hitting cacheRoot.
+			return nil
 		}
-	}
-	if parent == c.cacheRoot {
-		if err := os.RemoveAll(dir); err != nil {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				// dir is a path stem (or already gone); keep walking up.
+				dir = parent
+				continue
+			}
 			return err
 		}
-		return nil
+		if len(entries) > 0 {
+			// Sibling file or directory remains; stop here.
+			return nil
+		}
+		if err := os.Remove(dir); err != nil {
+			if os.IsNotExist(err) {
+				// Raced with another remover; keep walking up.
+				dir = parent
+				continue
+			}
+			if isDirNotEmpty(err) {
+				// Raced with a writer that re-populated the dir
+				// between ReadDir and Remove. Normal stop condition.
+				return nil
+			}
+			return err
+		}
+		dir = parent
 	}
+	return nil
+}
 
-	return c.recursiveRemoveDir(parent)
+// isDirNotEmpty reports whether err means "directory not empty".
+// POSIX (SUSv3) allows rmdir to return either ENOTEMPTY or EEXIST for
+// a non-empty directory, so both are treated the same. Windows
+// surfaces the same situation as ERROR_DIR_NOT_EMPTY (winerror.h #145).
+func isDirNotEmpty(err error) bool {
+	if errors.Is(err, syscall.ENOTEMPTY) || errors.Is(err, syscall.EEXIST) {
+		return true
+	}
+	if runtime.GOOS == "windows" {
+		var eno syscall.Errno
+		if errors.As(err, &eno) && eno == 145 {
+			return true
+		}
+	}
+	return false
 }
 
 func isWritable(dir string) (bool, error) {
