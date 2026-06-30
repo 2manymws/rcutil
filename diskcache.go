@@ -553,35 +553,21 @@ func (c *DiskCache) removeCache(ci *cacheItem) {
 }
 
 func (c *DiskCache) recursiveRemoveDir(dir string) error {
-	if c.cacheRoot == dir {
-		return nil
-	}
-	parent := filepath.Dir(dir)
-	entries, err := os.ReadDir(parent)
-	if err != nil {
-		return err
-	}
-	dirs := 0
-	for _, e := range entries {
-		if e.IsDir() {
-			dirs++
-			if dirs > 1 {
-				// There are directories beside it, so delete only itself.
-				if err := os.RemoveAll(dir); err != nil {
-					return err
-				}
-				return nil
-			}
+	// Walk upward and remove empty directories only. os.Remove fails on
+	// non-empty directories, which lets sibling cache files (e.g. another
+	// key sharing the same parent) survive. Stop at cacheRoot.
+	for dir != c.cacheRoot {
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached filesystem root without hitting cacheRoot.
+			return nil
 		}
-	}
-	if parent == c.cacheRoot {
-		if err := os.RemoveAll(dir); err != nil {
-			return err
+		if err := os.Remove(dir); err != nil && !os.IsNotExist(err) {
+			return nil //nostyle:handlerrors
 		}
-		return nil
+		dir = parent
 	}
-
-	return c.recursiveRemoveDir(parent)
+	return nil
 }
 
 func isWritable(dir string) (bool, error) {
